@@ -31,9 +31,9 @@ public class FlatMaterialDesignDarkIJTheme
 {
 	public static final String NAME = "Material Design Dark";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatMaterialDesignDarkIJTheme() );
+			return setup( new FlatMaterialDesignDarkIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

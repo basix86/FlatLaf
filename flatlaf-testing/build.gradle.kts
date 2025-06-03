@@ -14,35 +14,59 @@
  * limitations under the License.
  */
 
+import java.util.Properties
+
 plugins {
 	`java-library`
-}
-
-repositories {
-	maven {
-		// for using MigLayout snapshot
-		url = uri( "https://oss.sonatype.org/content/repositories/snapshots/" )
-	}
+	`flatlaf-toolchain`
 }
 
 dependencies {
 	implementation( project( ":flatlaf-core" ) )
 	implementation( project( ":flatlaf-extras" ) )
+	implementation( project( ":flatlaf-fonts-inter" ) )
+	implementation( project( ":flatlaf-fonts-jetbrains-mono" ) )
+	implementation( project( ":flatlaf-fonts-roboto" ) )
+	implementation( project( ":flatlaf-fonts-roboto-mono" ) )
 	implementation( project( ":flatlaf-swingx" ) )
 	implementation( project( ":flatlaf-jide-oss" ) )
 	implementation( project( ":flatlaf-intellij-themes" ) )
 	implementation( project( ":flatlaf-demo" ) )
 //	implementation( project( ":flatlaf-natives-jna" ) )
 
-	implementation( "com.miglayout:miglayout-swing:5.3-SNAPSHOT" )
-	implementation( "com.jgoodies:jgoodies-forms:1.9.0" )
-	implementation( "org.swinglabs.swingx:swingx-all:1.6.5-1" )
-	implementation( "org.swinglabs.swingx:swingx-beaninfo:1.6.5-1" )
-	implementation( "com.formdev:jide-oss:3.7.11.1" )
-	implementation( "com.glazedlists:glazedlists:1.11.0" )
-	implementation( "org.netbeans.api:org-openide-awt:RELEASE112" )
+	implementation( libs.miglayout.swing )
+	implementation( libs.jgoodies.forms )
+	implementation( libs.swingx.all )
+	implementation( libs.swingx.beaninfo )
+	implementation( libs.jide.oss )
+	implementation( libs.glazedlists )
+	implementation( libs.netbeans.api.awt )
 
-//	implementation( "org.pushing-pixels:radiance-substance:3.5.1" )
-//	implementation( "com.weblookandfeel:weblaf-ui:1.2.13" )
-//	implementation( "com.jgoodies:jgoodies-looks:2.7.0" )
+	components.all<TargetJvmVersion8Rule>()
+}
+
+applyLafs()
+
+fun applyLafs() {
+	val properties = Properties()
+	file( "lafs.properties" ).inputStream().use {
+		properties.load( it )
+	}
+
+	for( value in properties.values ) {
+		value as String
+		val parts = value.split( ';' )
+		if( parts.size >= 3 )
+			dependencies.implementation( parts[2] )
+	}
+}
+
+// rule that overrides 'org.gradle.jvm.version' with '8'
+// (required for Radiance, which requires Java 9, but FlatLaf build uses Java 8)
+abstract class TargetJvmVersion8Rule : ComponentMetadataRule {
+	override fun execute( context: ComponentMetadataContext ) {
+		context.details.allVariants {
+			attributes.attribute( TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 8 )
+		}
+	}
 }

@@ -31,9 +31,9 @@ public class FlatSolarizedDarkIJTheme
 {
 	public static final String NAME = "Solarized Dark";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatSolarizedDarkIJTheme() );
+			return setup( new FlatSolarizedDarkIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

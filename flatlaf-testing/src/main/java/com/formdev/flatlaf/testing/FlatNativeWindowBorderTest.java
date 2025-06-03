@@ -35,8 +35,10 @@ import com.formdev.flatlaf.FlatIntelliJLaf;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.extras.FlatInspector;
+import com.formdev.flatlaf.extras.components.FlatTriStateCheckBox;
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import com.formdev.flatlaf.ui.FlatLineBorder;
-import com.formdev.flatlaf.ui.FlatNativeWindowBorder;
 import com.formdev.flatlaf.util.SystemInfo;
 import net.miginfocom.swing.*;
 
@@ -55,8 +57,9 @@ public class FlatNativeWindowBorderTest
 
 	public static void main( String[] args ) {
 		SwingUtilities.invokeLater( () -> {
-			FlatLightLaf.install();
+			FlatLightLaf.setup();
 			FlatInspector.install( "ctrl shift alt X" );
+			UIManager.put( "FlatLaf.debug.titlebar.showRectangles", true );
 
 			mainFrame = showFrame();
 		} );
@@ -160,6 +163,8 @@ public class FlatNativeWindowBorderTest
 		registerSwitchToLookAndFeel( "F2", FlatDarkLaf.class.getName() );
 		registerSwitchToLookAndFeel( "F3", FlatIntelliJLaf.class.getName() );
 		registerSwitchToLookAndFeel( "F4", FlatDarculaLaf.class.getName() );
+		registerSwitchToLookAndFeel( "F5", FlatMacLightLaf.class.getName() );
+		registerSwitchToLookAndFeel( "F6", FlatMacDarkLaf.class.getName() );
 
 		registerSwitchToLookAndFeel( "F8", FlatTestLaf.class.getName() );
 
@@ -169,8 +174,8 @@ public class FlatNativeWindowBorderTest
 			registerSwitchToLookAndFeel( "F9", "com.apple.laf.AquaLookAndFeel" );
 		else if( SystemInfo.isLinux )
 			registerSwitchToLookAndFeel( "F9", "com.sun.java.swing.plaf.gtk.GTKLookAndFeel" );
-		registerSwitchToLookAndFeel( "F12", MetalLookAndFeel.class.getName() );
 		registerSwitchToLookAndFeel( "F11", NimbusLookAndFeel.class.getName() );
+		registerSwitchToLookAndFeel( "F12", MetalLookAndFeel.class.getName() );
 	}
 
 	private void updateInfo() {
@@ -304,13 +309,11 @@ public class FlatNativeWindowBorderTest
 	}
 
 	private void nativeChanged() {
-		FlatNativeWindowBorder.setHasCustomDecoration( window, nativeCheckBox.isSelected() );
+		FlatLaf.setUseNativeWindowDecorations( nativeCheckBox.isSelected() );
 	}
 
 	private void native2Changed() {
-		((RootPaneContainer)window).getRootPane().putClientProperty( FlatClientProperties.USE_WINDOW_DECORATIONS, native2CheckBox.isSelected() );
-		window.dispose();
-		window.setVisible( true );
+		((RootPaneContainer)window).getRootPane().putClientProperty( FlatClientProperties.USE_WINDOW_DECORATIONS, native2CheckBox.getChecked() );
 	}
 
 	private void revalidateLayout() {
@@ -382,7 +385,7 @@ public class FlatNativeWindowBorderTest
 		undecoratedCheckBox = new JCheckBox();
 		fullScreenCheckBox = new JCheckBox();
 		nativeCheckBox = new JCheckBox();
-		native2CheckBox = new JCheckBox();
+		native2CheckBox = new FlatTriStateCheckBox();
 		openDialogButton = new JButton();
 		hideWindowButton = new JButton();
 		reopenButton = new JButton();
@@ -446,7 +449,6 @@ public class FlatNativeWindowBorderTest
 
 		//---- native2CheckBox ----
 		native2CheckBox.setText("JRootPane.useWindowDecorations");
-		native2CheckBox.setSelected(true);
 		native2CheckBox.addActionListener(e -> native2Changed());
 		add(native2CheckBox, "cell 0 3 3 1");
 
@@ -507,7 +509,7 @@ public class FlatNativeWindowBorderTest
 	private JCheckBox undecoratedCheckBox;
 	private JCheckBox fullScreenCheckBox;
 	private JCheckBox nativeCheckBox;
-	private JCheckBox native2CheckBox;
+	private FlatTriStateCheckBox native2CheckBox;
 	private JButton openDialogButton;
 	private JButton hideWindowButton;
 	private JButton reopenButton;

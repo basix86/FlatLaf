@@ -17,54 +17,61 @@
 package com.formdev.flatlaf.icons;
 
 import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Component;
 import java.awt.Graphics2D;
-import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
-import javax.swing.UIManager;
-import com.formdev.flatlaf.ui.FlatButtonUI;
+import com.formdev.flatlaf.ui.FlatUIUtils;
+import com.formdev.flatlaf.util.SystemInfo;
 
 /**
  * "close" icon for windows (frames and dialogs).
  *
- * @uiDefault TitlePane.closeHoverBackground			Color
- * @uiDefault TitlePane.closePressedBackground			Color
- * @uiDefault TitlePane.closeHoverForeground			Color
- * @uiDefault TitlePane.closePressedForeground			Color
+ * @uiDefault TitlePane.closeBackground					Color	optional
+ * @uiDefault TitlePane.closeForeground					Color	optional
+ * @uiDefault TitlePane.closeInactiveBackground			Color	optional
+ * @uiDefault TitlePane.closeInactiveForeground			Color	optional
+ * @uiDefault TitlePane.closeHoverBackground			Color	optional
+ * @uiDefault TitlePane.closeHoverForeground			Color	optional
+ * @uiDefault TitlePane.closePressedBackground			Color	optional
+ * @uiDefault TitlePane.closePressedForeground			Color	optional
  *
  * @author Karl Tauber
  */
 public class FlatWindowCloseIcon
 	extends FlatWindowAbstractIcon
 {
-	private final Color hoverForeground = UIManager.getColor( "TitlePane.closeHoverForeground" );
-	private final Color pressedForeground = UIManager.getColor( "TitlePane.closePressedForeground" );
-
 	public FlatWindowCloseIcon() {
-		super( UIManager.getDimension( "TitlePane.buttonSize" ),
-			UIManager.getColor( "TitlePane.closeHoverBackground" ),
-			UIManager.getColor( "TitlePane.closePressedBackground" ) );
+		this( null );
+	}
+
+	/** @since 3.2 */
+	public FlatWindowCloseIcon( String windowStyle ) {
+		super( windowStyle,
+			FlatUIUtils.getSubUIColor( "TitlePane.closeBackground", windowStyle ),
+			FlatUIUtils.getSubUIColor( "TitlePane.closeForeground", windowStyle ),
+			FlatUIUtils.getSubUIColor( "TitlePane.closeInactiveBackground", windowStyle ),
+			FlatUIUtils.getSubUIColor( "TitlePane.closeInactiveForeground", windowStyle ),
+			FlatUIUtils.getSubUIColor( "TitlePane.closeHoverBackground", windowStyle ),
+			FlatUIUtils.getSubUIColor( "TitlePane.closeHoverForeground", windowStyle ),
+			FlatUIUtils.getSubUIColor( "TitlePane.closePressedBackground", windowStyle ),
+			FlatUIUtils.getSubUIColor( "TitlePane.closePressedForeground", windowStyle ) );
 	}
 
 	@Override
 	protected void paintIconAt1x( Graphics2D g, int x, int y, int width, int height, double scaleFactor ) {
-		int iwh = (int) (10 * scaleFactor);
+		int iwh = (int) (symbolHeight * scaleFactor);
 		int ix = x + ((width - iwh) / 2);
 		int iy = y + ((height - iwh) / 2);
 		int ix2 = ix + iwh - 1;
 		int iy2 = iy + iwh - 1;
-		int thickness = (int) scaleFactor;
+		boolean isWindows10 = SystemInfo.isWindows_10_orLater && !SystemInfo.isWindows_11_orLater;
+		float thickness = Math.max( isWindows10 ? (int) scaleFactor : (float) scaleFactor, 1 );
 
-		Path2D path = new Path2D.Float( Path2D.WIND_EVEN_ODD );
-		path.append( new Line2D.Float( ix, iy, ix2, iy2 ), false );
-		path.append( new Line2D.Float( ix, iy2, ix2, iy ), false );
+		Path2D path = new Path2D.Float( Path2D.WIND_EVEN_ODD, 4 );
+		path.moveTo( ix, iy );
+		path.lineTo( ix2, iy2 );
+		path.moveTo( ix, iy2 );
+		path.lineTo( ix2, iy );
 		g.setStroke( new BasicStroke( thickness ) );
 		g.draw( path );
-	}
-
-	@Override
-	protected Color getForeground( Component c ) {
-		return FlatButtonUI.buttonStateColor( c, c.getForeground(), null, null, hoverForeground, pressedForeground );
 	}
 }

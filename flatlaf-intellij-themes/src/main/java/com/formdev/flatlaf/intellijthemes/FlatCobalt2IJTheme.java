@@ -31,9 +31,9 @@ public class FlatCobalt2IJTheme
 {
 	public static final String NAME = "Cobalt 2";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatCobalt2IJTheme() );
+			return setup( new FlatCobalt2IJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

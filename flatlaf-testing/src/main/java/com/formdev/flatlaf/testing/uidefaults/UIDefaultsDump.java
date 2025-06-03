@@ -22,18 +22,23 @@ import java.awt.Font;
 import java.awt.Insets;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -41,20 +46,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import javax.swing.InputMap;
-import javax.swing.JComponent;
-import javax.swing.JInternalFrame;
-import javax.swing.JToolBar;
-import javax.swing.KeyStroke;
-import javax.swing.ListCellRenderer;
-import javax.swing.LookAndFeel;
-import javax.swing.UIDefaults;
+import javax.swing.*;
 import javax.swing.UIDefaults.ActiveValue;
 import javax.swing.UIDefaults.LazyValue;
-import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
@@ -62,14 +58,19 @@ import javax.swing.border.LineBorder;
 import javax.swing.plaf.BorderUIResource;
 import javax.swing.plaf.UIResource;
 import javax.swing.plaf.basic.BasicLookAndFeel;
+import javax.swing.table.JTableHeader;
 import com.formdev.flatlaf.*;
+import com.formdev.flatlaf.demo.intellijthemes.IJThemesDump;
 import com.formdev.flatlaf.intellijthemes.FlatAllIJThemes;
 import com.formdev.flatlaf.testing.FlatTestLaf;
+import com.formdev.flatlaf.themes.*;
 import com.formdev.flatlaf.ui.FlatLineBorder;
 import com.formdev.flatlaf.ui.FlatUIUtils;
+import com.formdev.flatlaf.util.ColorFunctions;
 import com.formdev.flatlaf.util.ColorFunctions.ColorFunction;
 import com.jidesoft.plaf.LookAndFeelFactory;
 import com.formdev.flatlaf.util.DerivedColor;
+import com.formdev.flatlaf.util.HSLColor;
 import com.formdev.flatlaf.util.StringUtils;
 import com.formdev.flatlaf.util.SystemInfo;
 
@@ -84,6 +85,7 @@ public class UIDefaultsDump
 	private final UIDefaults defaults;
 	private final Properties derivedColorKeys;
 	private final boolean isIntelliJTheme;
+	private final boolean dumpHSL;
 
 	private String lastPrefix;
 	private JComponent dummyComponent;
@@ -101,9 +103,12 @@ public class UIDefaultsDump
 		if( SystemInfo.isWindows ) {
 			dump( FlatIntelliJLaf.class.getName(), dir, false );
 			dump( FlatDarculaLaf.class.getName(), dir, false );
-		}
 
-		dump( FlatTestLaf.class.getName(), dir, false );
+			dump( FlatMacLightLaf.class.getName(), dir, false );
+			dump( FlatMacDarkLaf.class.getName(), dir, false );
+
+			dump( FlatTestLaf.class.getName(), dir, false );
+		}
 
 //		dump( MyBasicLookAndFeel.class.getName(), dir, false );
 //		dump( MetalLookAndFeel.class.getName(), dir, false );
@@ -118,15 +123,20 @@ public class UIDefaultsDump
 //
 //		dump( "com.jgoodies.looks.plastic.PlasticLookAndFeel", dir, false );
 //		dump( "com.jgoodies.looks.windows.WindowsLookAndFeel", dir, false );
-//		dump( "com.alee.laf.WebLookAndFeel", dir, false );
 //		try {
-//			EventQueue.invokeAndWait( () -> {
-//				dump( "org.pushingpixels.substance.api.skin.SubstanceGraphiteAquaLookAndFeel", dir, false );
+//			SwingUtilities.invokeAndWait( () -> {
+//				dump( "org.pushingpixels.radiance.theming.api.skin.RadianceGraphiteAquaLookAndFeel", dir, false );
 //			} );
 //		} catch( Exception ex ) {
 //			// TODO Auto-generated catch block
 //			ex.printStackTrace();
 //		}
+
+		// used to test whether system color influences IntelliJ themes
+		// (first run without this, save result, run with this and compare outputs)
+//		FlatLaf.setSystemColorGetter( name -> {
+//			return Color.red;
+//		} );
 
 //		dumpIntelliJThemes( dir );
 
@@ -146,6 +156,8 @@ public class UIDefaultsDump
 	private static void dumpIntelliJThemes( File dir ) {
 		dir = new File( dir, "intellijthemes" );
 
+		IJThemesDump.enablePropertiesRecording();
+
 		for( LookAndFeelInfo info : FlatAllIJThemes.INFOS ) {
 			String lafClassName = info.getClassName();
 			String relativeLafClassName = StringUtils.removeLeading( lafClassName, "com.formdev.flatlaf.intellijthemes." );
@@ -158,6 +170,8 @@ public class UIDefaultsDump
 	}
 
 	private static void dump( String lookAndFeelClassName, File dir, boolean jide ) {
+		System.out.println( "---- "+lookAndFeelClassName+" -------------------------------" );
+
 		try {
 			UIManager.setLookAndFeel( lookAndFeelClassName );
 			if( jide )
@@ -175,18 +189,32 @@ public class UIDefaultsDump
 		// the lazy color InternalFrame.closeHoverBackground is resolved)
 		defaults = (UIDefaults) defaults.clone();
 
-		dump( dir, "", lookAndFeel, defaults, key -> !key.contains( "InputMap" ) );
+		dump( dir, "", lookAndFeel, defaults, key -> !key.contains( "InputMap" ), true );
 
-		if( lookAndFeel.getClass() == FlatLightLaf.class || !(lookAndFeel instanceof FlatLaf) )
-			dump( dir, "_InputMap", lookAndFeel, defaults, key -> key.contains( "InputMap" ) );
+		if( lookAndFeel.getClass() == FlatLightLaf.class || !(lookAndFeel instanceof FlatLaf) ) {
+			if( SystemInfo.isWindows || SystemInfo.isMacOS )
+				dump( dir, "_InputMap", lookAndFeel, defaults, key -> key.contains( "InputMap" ), false );
+
+			if( SystemInfo.isWindows )
+				dumpActionMaps( dir, "_ActionMap", lookAndFeel, defaults );
+		}
+
+		if( lookAndFeel instanceof IntelliJTheme.ThemeLaf ) {
+			File cdir = new File( dir.getPath().replace( "intellijthemes", "intellijthemes-colors" ) );
+			dumpColorsToProperties( cdir, lookAndFeel, defaults );
+
+			// dump as .properties
+			File pdir = new File( dir.getPath().replace( "intellijthemes", "intellijthemes-properties" ) );
+			IJThemesDump.dumpProperties( pdir, lookAndFeel.getClass().getSimpleName(), defaults );
+		}
 	}
 
 	private static void dump( File dir, String nameSuffix,
-		LookAndFeel lookAndFeel, UIDefaults defaults, Predicate<String> keyFilter )
+		LookAndFeel lookAndFeel, UIDefaults defaults, Predicate<String> keyFilter, boolean contrastRatios )
 	{
 		// dump to string
 		StringWriter stringWriter = new StringWriter( 100000 );
-		new UIDefaultsDump( lookAndFeel, defaults ).dump( new PrintWriter( stringWriter ), keyFilter );
+		new UIDefaultsDump( lookAndFeel, defaults ).dump( new PrintWriter( stringWriter ), keyFilter, contrastRatios );
 
 		String name = lookAndFeel instanceof MyBasicLookAndFeel
 			? BasicLookAndFeel.class.getSimpleName()
@@ -197,6 +225,8 @@ public class UIDefaultsDump
 				? "-linux"
 				: "");
 		String javaVersion = System.getProperty( "java.version" );
+		if( javaVersion.startsWith( "1.8.0_" ) && lookAndFeel instanceof FlatLaf )
+			javaVersion = "1.8.0";
 		File file = new File( dir, name + nameSuffix + "_"
 			+ javaVersion + osSuffix + ".txt" );
 
@@ -215,8 +245,9 @@ public class UIDefaultsDump
 		}
 		if( origFile != null ) {
 			try {
-				Map<String, String> defaults1 = parse( new FileReader( origFile ) );
-				Map<String, String> defaults2 = parse( new StringReader( stringWriter.toString() ) );
+				Map<String, String> defaults1 = parse( new InputStreamReader(
+					new FileInputStream( origFile ), StandardCharsets.UTF_8 ), false );
+				Map<String, String> defaults2 = parse( new StringReader( stringWriter.toString() ), false );
 
 				content = diff( defaults1, defaults2 );
 			} catch( Exception ex ) {
@@ -228,8 +259,76 @@ public class UIDefaultsDump
 
 		// write to file
 		file.getParentFile().mkdirs();
-		try( FileWriter fileWriter = new FileWriter( file ) ) {
+		try( Writer fileWriter = new OutputStreamWriter(
+			new FileOutputStream( file ), StandardCharsets.UTF_8 ) )
+		{
 			fileWriter.write( content );
+		} catch( IOException ex ) {
+			ex.printStackTrace();
+		}
+	}
+
+	private static void dumpActionMaps( File dir, String nameSuffix,
+		LookAndFeel lookAndFeel, UIDefaults defaults )
+	{
+		// dump to string
+		StringWriter stringWriter = new StringWriter( 100000 );
+		new UIDefaultsDump( lookAndFeel, defaults ).dumpActionMaps( new PrintWriter( stringWriter ) );
+
+		String name = lookAndFeel instanceof MyBasicLookAndFeel
+			? BasicLookAndFeel.class.getSimpleName()
+			: lookAndFeel.getClass().getSimpleName();
+		String javaVersion = System.getProperty( "java.version" );
+		if( javaVersion.startsWith( "1.8.0_" ) && lookAndFeel instanceof FlatLaf )
+			javaVersion = "1.8.0";
+		File file = new File( dir, name + nameSuffix + "_"
+			+ javaVersion + ".txt" );
+
+		// write to file
+		file.getParentFile().mkdirs();
+		try( Writer fileWriter = new OutputStreamWriter(
+			new FileOutputStream( file ), StandardCharsets.UTF_8 ) )
+		{
+			fileWriter.write( stringWriter.toString().replace( "\r", "" ) );
+		} catch( IOException ex ) {
+			ex.printStackTrace();
+		}
+	}
+
+	private static void dumpColorsToProperties( File dir, LookAndFeel lookAndFeel, UIDefaults defaults ) {
+		// dump to string
+		StringWriter stringWriter = new StringWriter( 100000 );
+		new UIDefaultsDump( lookAndFeel, defaults ).dumpColorsAsProperties( new PrintWriter( stringWriter ) );
+
+		String name = lookAndFeel instanceof MyBasicLookAndFeel
+			? BasicLookAndFeel.class.getSimpleName()
+			: lookAndFeel.getClass().getSimpleName();
+		File file = new File( dir, name + ".properties" );
+
+		// build and append differences
+		if( file.exists() ) {
+			try {
+				Map<String, String> defaults1 = parse( new InputStreamReader(
+					new FileInputStream( file ), StandardCharsets.UTF_8 ), true );
+				Map<String, String> defaults2 = parse( new StringReader( stringWriter.toString() ), true );
+
+				String diff = diff( defaults1, defaults2 );
+				if( !diff.isEmpty() ) {
+					stringWriter.write( "\n\n\n\n#==== Differences ==============================================================\n\n" );
+					stringWriter.write( diff );
+				}
+			} catch( Exception ex ) {
+				ex.printStackTrace();
+				return;
+			}
+		}
+
+		// write to file
+		file.getParentFile().mkdirs();
+		try( Writer fileWriter = new OutputStreamWriter(
+			new FileOutputStream( file ), StandardCharsets.UTF_8 ) )
+		{
+			fileWriter.write( stringWriter.toString().replace( "\r", "" ) );
 		} catch( IOException ex ) {
 			ex.printStackTrace();
 		}
@@ -310,18 +409,24 @@ public class UIDefaultsDump
 			buf.append( '\n' );
 	}
 
-	private static Map<String, String> parse( Reader in ) throws IOException {
+	private static Map<String, String> parse( Reader in, boolean ignoreDiffs ) throws IOException {
 		Map<String, String> defaults = new LinkedHashMap<>();
 		try( BufferedReader reader = new BufferedReader( in ) ) {
 			String lastKey = null;
+			boolean inContrastRatios = false;
 
 			String line;
 			while( (line = reader.readLine()) != null ) {
 				String trimmedLine = line.trim();
 				if( trimmedLine.isEmpty() || trimmedLine.startsWith( "#" ) ) {
 					lastKey = null;
+					if( trimmedLine.contains( "#-------- Contrast Ratios --------" ) )
+						inContrastRatios = true;
 					continue;
 				}
+
+				if( ignoreDiffs && (trimmedLine.startsWith( "- " ) || trimmedLine.startsWith( "+ " )) )
+					continue;
 
 				if( Character.isWhitespace( line.charAt( 0 ) ) ) {
 					String value = defaults.get( lastKey );
@@ -334,6 +439,8 @@ public class UIDefaultsDump
 
 					String key = line.substring( 0, sep );
 					String value = line.substring( sep );
+					if( inContrastRatios )
+						key = "contrast ratio: " + key;
 					defaults.put( key, value );
 
 					lastKey = key;
@@ -349,9 +456,10 @@ public class UIDefaultsDump
 
 		derivedColorKeys = loadDerivedColorKeys();
 		isIntelliJTheme = (lookAndFeel instanceof IntelliJTheme.ThemeLaf);
+		dumpHSL = lookAndFeel instanceof FlatLaf;
 	}
 
-	private void dump( PrintWriter out, Predicate<String> keyFilter ) {
+	private void dumpHeader( PrintWriter out ) {
 		Class<?> lookAndFeelClass = lookAndFeel instanceof MyBasicLookAndFeel
 			? BasicLookAndFeel.class
 			: lookAndFeel.getClass();
@@ -360,17 +468,21 @@ public class UIDefaultsDump
 		out.printf( "Name   %s%n", lookAndFeel.getName() );
 		out.printf( "Java   %s%n", System.getProperty( "java.version" ) );
 		out.printf( "OS     %s%n", System.getProperty( "os.name" ) );
+	}
+
+	private void dump( PrintWriter out, Predicate<String> keyFilter, boolean contrastRatios ) {
+		dumpHeader( out );
 
 		defaults.entrySet().stream()
-			.sorted( (key1, key2) -> {
-				return String.valueOf( key1 ).compareTo( String.valueOf( key2 ) );
+			.sorted( (e1, e2) -> {
+				return String.valueOf( e1.getKey() ).compareTo( String.valueOf( e2.getKey() ) );
 			} )
 			.forEach( entry -> {
 				Object key = entry.getKey();
 				Object value = entry.getValue();
 
 				String strKey = String.valueOf( key );
-				if( !keyFilter.test( strKey ) )
+				if( !keyFilter.test( strKey ) || strKey.startsWith( "FlatLaf.internal." ) )
 					return;
 
 				String prefix = keyPrefix( strKey );
@@ -383,6 +495,86 @@ public class UIDefaultsDump
 				dumpValue( out, strKey, value );
 				out.println();
 			} );
+
+		if( contrastRatios )
+			dumpContrastRatios( out );
+	}
+
+	private void dumpColorsAsProperties( PrintWriter out ) {
+		defaults.keySet().stream()
+			.sorted( (key1, key2) -> {
+				return String.valueOf( key1 ).compareTo( String.valueOf( key2 ) );
+			} )
+			.forEach( key -> {
+				Color color = defaults.getColor( key );
+				if( color == null )
+					return;
+
+				String strKey = String.valueOf( key );
+				String prefix = keyPrefix( strKey );
+				if( !prefix.equals( lastPrefix ) ) {
+					lastPrefix = prefix;
+					out.printf( "%n%n#---- %s ----%n%n", prefix );
+				}
+
+				out.printf( "%-50s = #%06x", strKey, color.getRGB() & 0xffffff );
+				if( color.getAlpha() != 255 )
+					out.printf( "%02x", (color.getRGB() >> 24) & 0xff );
+				out.println();
+			} );
+	}
+
+	private void dumpActionMaps( PrintWriter out ) {
+		dumpHeader( out );
+
+		dumpActionMap( out, new JButton() );
+		dumpActionMap( out, new JCheckBox() );
+		dumpActionMap( out, new JCheckBoxMenuItem() );
+		dumpActionMap( out, new JColorChooser() );
+		dumpActionMap( out, new JComboBox<>() );
+		dumpActionMap( out, new JDesktopPane() );
+		dumpActionMap( out, new JEditorPane() );
+		dumpActionMap( out, new JFileChooser() );
+		dumpActionMap( out, new JFormattedTextField() );
+		dumpActionMap( out, new JInternalFrame() );
+		dumpActionMap( out, new JLabel() );
+		dumpActionMap( out, new JList<>() );
+		dumpActionMap( out, new JMenu() );
+		dumpActionMap( out, new JMenuBar() );
+		dumpActionMap( out, new JMenuItem() );
+		dumpActionMap( out, new JOptionPane() );
+		dumpActionMap( out, new JPanel() );
+		dumpActionMap( out, new JPasswordField() );
+		dumpActionMap( out, new JPopupMenu() );
+		dumpActionMap( out, new JProgressBar() );
+		dumpActionMap( out, new JRadioButton() );
+		dumpActionMap( out, new JRadioButtonMenuItem() );
+		dumpActionMap( out, new JRootPane() );
+		dumpActionMap( out, new JScrollBar() );
+		dumpActionMap( out, new JScrollPane() );
+		dumpActionMap( out, new JSeparator() );
+		dumpActionMap( out, new JSlider() );
+		dumpActionMap( out, new JSpinner() );
+		dumpActionMap( out, new JSplitPane() );
+		dumpActionMap( out, new JTabbedPane() );
+		dumpActionMap( out, new JTable() );
+		dumpActionMap( out, new JTableHeader() );
+		dumpActionMap( out, new JTextArea() );
+		dumpActionMap( out, new JTextField() );
+		dumpActionMap( out, new JTextPane() );
+		dumpActionMap( out, new JToggleButton() );
+		dumpActionMap( out, new JToolBar() );
+		dumpActionMap( out, new JToolTip() );
+		dumpActionMap( out, new JTree() );
+		dumpActionMap( out, new JViewport() );
+	}
+
+	private void dumpActionMap( PrintWriter out, JComponent c ) {
+		out.printf( "%n%n%n#---- %s ----%n%n", c.getClass().getName() );
+
+		ActionMap actionMap = SwingUtilities.getUIActionMap( c );
+		if( actionMap != null )
+			dumpActionMap( out, actionMap, null );
 	}
 
 	private static String keyPrefix( String key ) {
@@ -404,7 +596,7 @@ public class UIDefaultsDump
 		} else if( value instanceof Character ) {
 			char ch = ((Character)value).charValue();
 			if( ch >= ' ' && ch <= '~' )
-				out.printf( "'%c'", value );
+				out.printf( "'%c'", ch );
 			else
 				out.printf( "'\\u%h'", (int) ch );
 		} else if( value.getClass().isArray() )
@@ -453,20 +645,22 @@ public class UIDefaultsDump
 	}
 
 	private void dumpColor( PrintWriter out, String key, Color color ) {
-		Color resolvedColor = resolveDerivedColor( key, color );
+		Color[] retBaseColor = new Color[1];
+		Color resolvedColor = resolveDerivedColor( key, color, retBaseColor );
 		if( resolvedColor != color && resolvedColor.getRGB() != color.getRGB() ) {
 			if( !isIntelliJTheme ) {
 				System.err.println( "Key '" + key + "': derived colors not equal" );
-				System.err.println( "  Default color:  " + dumpColorHex( color ) );
-				System.err.println( "  Resolved color: " + dumpColorHex( resolvedColor ) );
+				System.err.println( "  Default color:  " + dumpColorHexAndHSL( color ) );
+				System.err.println( "  Resolved color: " + dumpColorHexAndHSL( resolvedColor ) );
+				System.err.println( "  Base color:     " + dumpColorHexAndHSL( retBaseColor[0] ) );
 			}
 
 			out.printf( "%s / ",
-				dumpColorHex( resolvedColor ) );
+				dumpColorHexAndHSL( resolvedColor ) );
 		}
 
 		out.printf( "%s    %s",
-			dumpColorHex( color ),
+			dumpColorHexAndHSL( color ),
 			dumpClass( color ) );
 
 		if( color instanceof DerivedColor ) {
@@ -479,11 +673,33 @@ public class UIDefaultsDump
 		}
 	}
 
+	private String dumpColorHexAndHSL( Color color ) {
+		String hex = dumpColorHex( color );
+		return dumpHSL
+			? hex + "  " + dumpColorHSL( color )
+			: hex;
+	}
+
 	private String dumpColorHex( Color color ) {
 		boolean hasAlpha = (color.getAlpha() != 255);
 		return hasAlpha
 			? String.format( "#%06x%02x  %d%%", color.getRGB() & 0xffffff, (color.getRGB() >> 24) & 0xff, Math.round( color.getAlpha() / 2.55f ) )
 			: String.format( "#%06x", color.getRGB() & 0xffffff );
+	}
+
+	private String dumpColorHSL( Color color ) {
+		HSLColor hslColor = new HSLColor( color );
+		int hue = Math.round( hslColor.getHue() );
+		int saturation = Math.round( hslColor.getSaturation() );
+		int luminance = Math.round( hslColor.getLuminance() );
+		if( color.getAlpha() == 255 ) {
+			return String.format( "HSL %3d %3d %3d",
+				hue, saturation, luminance );
+		} else {
+			int alpha = Math.round( hslColor.getAlpha() * 100 );
+			return String.format( "HSLA %3d %3d %3d %2d",
+				hue, saturation, luminance, alpha );
+		}
 	}
 
 	private void dumpFont( PrintWriter out, Font font ) {
@@ -550,7 +766,7 @@ public class UIDefaultsDump
 
 			switch( borderClassName ) {
 				case "com.apple.laf.AquaToolBarUI$ToolBarBorder":
-				case "org.pushingpixels.substance.internal.utils.border.SubstanceToolBarBorder":
+				case "org.pushingpixels.radiance.theming.internal.utils.border.RadianceToolBarBorder":
 					c = new JToolBar();
 					break;
 
@@ -605,8 +821,38 @@ public class UIDefaultsDump
 		}
 
 		InputMap parent = inputMap.getParent();
-		if( parent != null )
+		if( parent != null ) {
+			out.printf( "%n%n%s", indent );
 			dumpInputMap( out, parent, indent + "    " );
+		}
+	}
+
+	private void dumpActionMap( PrintWriter out, ActionMap actionMap, String indent ) {
+		if( indent == null )
+			indent = "    ";
+
+		out.printf( "%-2d      %s", actionMap.size(), dumpClass( actionMap ) );
+
+		Object[] keys = actionMap.keys();
+		if( keys != null ) {
+			Arrays.sort( keys, (key1, key2) -> {
+				return String.valueOf( key1 ).compareTo( String.valueOf( key2 ) );
+			} );
+			for( Object key : keys ) {
+				Action action = actionMap.get( key );
+				out.printf( "%n%s%-35s  %s", indent, key, action.getClass().getName() );
+
+				Object name = action.getValue( Action.NAME );
+				if( !Objects.equals( name, key ) )
+					out.printf( " (%s)", name );
+			}
+		}
+
+		ActionMap parent = actionMap.getParent();
+		if( parent != null ) {
+			out.printf( "%n%n%s", indent );
+			dumpActionMap( out, parent, indent + "    " );
+		}
 	}
 
 	private void dumpLazyValue( PrintWriter out, LazyValue value ) {
@@ -645,7 +891,7 @@ public class UIDefaultsDump
 		return properties;
 	}
 
-	private Color resolveDerivedColor( String key, Color color ) {
+	private Color resolveDerivedColor( String key, Color color, Color[] retBaseColor ) {
 		if( !(color instanceof DerivedColor) )
 			return color;
 
@@ -666,13 +912,170 @@ public class UIDefaultsDump
 			throw new IllegalStateException( "Missing base color '" + baseKey + "' for key '" + key + "'." );
 
 		if( baseColor instanceof DerivedColor )
-			baseColor = resolveDerivedColor( (String) baseKey, baseColor );
+			baseColor = resolveDerivedColor( (String) baseKey, baseColor, retBaseColor );
+
+		retBaseColor[0] = baseColor;
 
 		Color newColor = FlatUIUtils.deriveColor( color, baseColor );
 
 		// creating a new color instance to drop Color.frgbvalue from newColor
 		// and avoid rounding issues/differences
 		return new Color( newColor.getRGB(), true );
+	}
+
+	private void dumpContrastRatios( PrintWriter out ) {
+		out.printf( "%n%n#-------- Contrast Ratios --------%n%n" );
+		out.println( "# WCAG 2 Contrast Requirements: minimum 4.5; enhanced 7.0" );
+		out.println( "# https://webaim.org/articles/contrast/#sc143" );
+		out.println();
+
+		HashMap<String, String> fg2bgMap = new HashMap<>();
+		defaults.keySet().stream()
+			.filter( key -> key instanceof String && ((String)key).endsWith( "ackground" ) )
+			.map( key -> (String) key )
+			.forEach( bgKey -> {
+				String fgKey = bgKey.replace( "Background", "Foreground" ).replace( "background", "foreground" );
+				fg2bgMap.put( fgKey, bgKey );
+			} );
+
+		// special cases
+		fg2bgMap.remove( "Button.disabledForeground" );
+		fg2bgMap.put( "Button.disabledText", "Button.disabledBackground" );
+		fg2bgMap.remove( "ToggleButton.disabledForeground" );
+		fg2bgMap.put( "ToggleButton.disabledText", "ToggleButton.disabledBackground" );
+		fg2bgMap.put( "CheckBox.foreground", "Panel.background" );
+		fg2bgMap.put( "CheckBox.disabledText", "Panel.background" );
+		fg2bgMap.put( "Label.foreground", "Panel.background" );
+		fg2bgMap.put( "Label.disabledForeground", "Panel.background" );
+		fg2bgMap.remove( "ProgressBar.foreground" );
+		fg2bgMap.put( "ProgressBar.selectionForeground", "ProgressBar.foreground" );
+		fg2bgMap.put( "ProgressBar.selectionBackground", "ProgressBar.background" );
+		fg2bgMap.put( "RadioButton.foreground", "Panel.background" );
+		fg2bgMap.put( "RadioButton.disabledText", "Panel.background" );
+		fg2bgMap.remove( "ScrollBar.foreground" );
+		fg2bgMap.remove( "ScrollBar.hoverButtonForeground" );
+		fg2bgMap.remove( "ScrollBar.pressedButtonForeground" );
+		fg2bgMap.remove( "ScrollPane.foreground" );
+		fg2bgMap.remove( "Separator.foreground" );
+		fg2bgMap.remove( "Slider.foreground" );
+		fg2bgMap.remove( "SplitPane.foreground" );
+		fg2bgMap.remove( "TextArea.disabledForeground" );
+		fg2bgMap.put( "TextArea.inactiveForeground", "TextArea.disabledBackground" );
+		fg2bgMap.remove( "TextPane.disabledForeground" );
+		fg2bgMap.put( "TextPane.inactiveForeground", "TextPane.disabledBackground" );
+		fg2bgMap.remove( "EditorPane.disabledForeground" );
+		fg2bgMap.put( "EditorPane.inactiveForeground", "EditorPane.disabledBackground" );
+		fg2bgMap.remove( "TextField.disabledForeground" );
+		fg2bgMap.put( "TextField.inactiveForeground", "TextField.disabledBackground" );
+		fg2bgMap.remove( "FormattedTextField.disabledForeground" );
+		fg2bgMap.put( "FormattedTextField.inactiveForeground", "FormattedTextField.disabledBackground" );
+		fg2bgMap.remove( "PasswordField.disabledForeground" );
+		fg2bgMap.put( "PasswordField.inactiveForeground", "PasswordField.disabledBackground" );
+		fg2bgMap.remove( "ToolBar.dockingForeground" );
+		fg2bgMap.remove( "ToolBar.floatingForeground" );
+		fg2bgMap.remove( "ToolBar.foreground" );
+		fg2bgMap.remove( "ToolBar.hoverButtonGroupForeground" );
+		fg2bgMap.remove( "Viewport.foreground" );
+
+		fg2bgMap.remove( "InternalFrame.closeHoverForeground" );
+		fg2bgMap.remove( "InternalFrame.closePressedForeground" );
+		fg2bgMap.remove( "TabbedPane.closeHoverForeground" );
+		fg2bgMap.remove( "TabbedPane.closePressedForeground" );
+		fg2bgMap.remove( "TitlePane.closeHoverForeground" );
+		fg2bgMap.remove( "TitlePane.closePressedForeground" );
+
+		// non-text
+		HashMap<String, String> nonTextMap = new HashMap<>();
+		nonTextMap.put( "Menu.icon.arrowColor", "Panel.background" );
+		nonTextMap.put( "Menu.icon.disabledArrowColor", "Panel.background" );
+		nonTextMap.put( "CheckBoxMenuItem.icon.checkmarkColor", "Panel.background" );
+		nonTextMap.put( "CheckBoxMenuItem.icon.disabledCheckmarkColor", "Panel.background" );
+		nonTextMap.put( "ProgressBar.foreground", "Panel.background" );
+		nonTextMap.put( "ProgressBar.background", "Panel.background" );
+		nonTextMap.put( "Separator.foreground", "Separator.background" );
+		nonTextMap.put( "Slider.trackColor", "Panel.background" );
+		nonTextMap.put( "Slider.trackValueColor", "Panel.background" );
+		nonTextMap.put( "Slider.disabledTrackColor", "Panel.background" );
+		nonTextMap.put( "TabbedPane.contentAreaColor", "Panel.background" );
+		nonTextMap.put( "ToolBar.separatorColor", "ToolBar.background" );
+
+
+//		out.println();
+//		fg2bgMap.entrySet().stream()
+//			.sorted( (e1, e2) -> e1.getKey().compareTo( e2.getKey() ) )
+//			.forEach( e -> {
+//				out.printf( "%-50s  %s%n", e.getKey(), e.getValue() );
+//			} );
+//		out.println();
+
+		AtomicReference<String> lastSubkey = new AtomicReference<>();
+
+		fg2bgMap.entrySet().stream()
+			.sorted( (e1, e2) -> {
+				String key1 = e1.getKey();
+				String key2 = e2.getKey();
+				int dot1 = key1.lastIndexOf( '.' );
+				int dot2 = key2.lastIndexOf( '.' );
+				if( dot1 < 0 || dot2 < 0 )
+					return key1.compareTo( key2 );
+				int r = key1.substring( dot1 + 1 ).compareTo( key2.substring( dot2 + 1 ) );
+				if( r != 0 )
+					return r;
+				return key1.substring( 0, dot1 ).compareTo( key2.substring( 0, dot2 ) );
+			} )
+			.forEach( e -> {
+				dumpContrastRatio( out, e.getKey(), e.getValue(), lastSubkey );
+			} );
+
+		out.println();
+		out.println( "#-- non-text --" );
+		nonTextMap.entrySet().stream()
+			.sorted( (e1, e2) -> {
+				return e1.getKey().compareTo( e2.getKey() );
+			} )
+			.forEach( e -> {
+				dumpContrastRatio( out, e.getKey(), e.getValue(), null );
+			} );
+	}
+
+	private void dumpContrastRatio( PrintWriter out, String fgKey, String bgKey, AtomicReference<String> lastSubkey ) {
+		Color background = defaults.getColor( bgKey );
+		Color foreground = defaults.getColor( fgKey );
+		if( background == null || foreground == null )
+			return;
+
+		String subkey = fgKey.substring( fgKey.lastIndexOf( '.' ) + 1 );
+		if( lastSubkey != null && !subkey.equals( lastSubkey.get() ) ) {
+			lastSubkey.set( subkey );
+			out.println();
+			out.println( "#-- " + subkey + " --" );
+		}
+
+		Color translucentForeground = null;
+		if( foreground.getAlpha() != 255 ) {
+			translucentForeground = foreground;
+			float weight = foreground.getAlpha() / 255f;
+			foreground = ColorFunctions.mix( new Color( foreground.getRGB() ), background, weight );
+		}
+
+		float luma1 = ColorFunctions.luma( background );
+		float luma2 = ColorFunctions.luma( foreground );
+		float contrastRatio = (luma1 > luma2)
+			? (luma1 + 0.05f) / (luma2 + 0.05f)
+			: (luma2 + 0.05f) / (luma1 + 0.05f);
+		String rateing =
+			contrastRatio < 1.95f ? "  !!!!!!" :
+			contrastRatio < 2.95f ? "  !!!!!" :
+			contrastRatio < 3.95f ? "  !!!!" :
+			contrastRatio < 4.95f ? "  !!!" :
+			contrastRatio < 5.95f ? "  !!" :
+			contrastRatio < 6.95f ? "  !" :
+			"";
+
+		out.printf( "%-50s  #%06x  #%06x    %4.1f%s%s%n", fgKey,
+			foreground.getRGB() & 0xffffff, background.getRGB() & 0xffffff,
+			contrastRatio, rateing,
+			translucentForeground != null ? "    " + dumpColorHex( translucentForeground ) : "" );
 	}
 
 	//---- class MyBasicLookAndFeel -------------------------------------------

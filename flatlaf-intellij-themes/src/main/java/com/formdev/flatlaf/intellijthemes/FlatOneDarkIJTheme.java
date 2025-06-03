@@ -31,9 +31,9 @@ public class FlatOneDarkIJTheme
 {
 	public static final String NAME = "One Dark";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatOneDarkIJTheme() );
+			return setup( new FlatOneDarkIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

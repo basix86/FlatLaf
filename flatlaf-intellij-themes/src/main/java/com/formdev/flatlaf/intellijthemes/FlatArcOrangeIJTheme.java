@@ -31,9 +31,9 @@ public class FlatArcOrangeIJTheme
 {
 	public static final String NAME = "Arc - Orange";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatArcOrangeIJTheme() );
+			return setup( new FlatArcOrangeIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

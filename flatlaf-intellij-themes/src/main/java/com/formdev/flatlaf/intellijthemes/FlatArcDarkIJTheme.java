@@ -31,9 +31,9 @@ public class FlatArcDarkIJTheme
 {
 	public static final String NAME = "Arc Dark";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatArcDarkIJTheme() );
+			return setup( new FlatArcDarkIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

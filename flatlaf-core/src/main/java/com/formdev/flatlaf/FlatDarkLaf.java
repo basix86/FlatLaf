@@ -33,9 +33,19 @@ public class FlatDarkLaf
 	/**
 	 * Sets the application look and feel to this LaF
 	 * using {@link UIManager#setLookAndFeel(javax.swing.LookAndFeel)}.
+	 *
+	 * @since 1.2
 	 */
+	public static boolean setup() {
+		return setup( new FlatDarkLaf() );
+	}
+
+	/**
+	 * @deprecated use {@link #setup()} instead; this method will be removed in a future version
+	 */
+	@Deprecated
 	public static boolean install() {
-		return install( new FlatDarkLaf() );
+		return setup();
 	}
 
 	/**

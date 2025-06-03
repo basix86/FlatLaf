@@ -31,9 +31,9 @@ public class FlatMonocaiIJTheme
 {
 	public static final String NAME = "Monocai";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatMonocaiIJTheme() );
+			return setup( new FlatMonocaiIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

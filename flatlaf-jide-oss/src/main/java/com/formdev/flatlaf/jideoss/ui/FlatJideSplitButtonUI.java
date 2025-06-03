@@ -25,9 +25,11 @@ import java.awt.geom.Rectangle2D;
 import javax.swing.ButtonModel;
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.plaf.ComponentUI;
+import javax.swing.plaf.PopupMenuUI;
 import com.formdev.flatlaf.ui.FlatUIUtils;
 import com.formdev.flatlaf.util.UIScale;
 import com.jidesoft.plaf.LookAndFeelFactory;
@@ -53,6 +55,14 @@ public class FlatJideSplitButtonUI
 		// usually JIDE would invoke this in JideSplitButton.updateUI(),
 		// but it does not because FlatLaf already has added the UI class to the UI defaults
 		LookAndFeelFactory.installJideExtension();
+
+		// workaround for bug in JideSplitButton, which overrides JMenu.updateUI(),
+		// but does not invoke super.updateUI() to update UI of JMenu.popupMenu field
+		if( c instanceof JideSplitButton ) {
+			JPopupMenu popupMenu = ((JideSplitButton)c).getPopupMenu();
+			if( popupMenu != null )
+				popupMenu.setUI( (PopupMenuUI) UIManager.getUI( popupMenu ) );
+		}
 
 		return new FlatJideSplitButtonUI();
 	}
@@ -121,7 +131,7 @@ public class FlatJideSplitButtonUI
 
 		Object[] oldRenderingHints = FlatUIUtils.setRenderingHints( g );
 		FlatUIUtils.paintArrow( (Graphics2D) g, r.x, r.y, r.width, r.height,
-			SwingConstants.SOUTH, FlatUIUtils.isChevron( arrowType ), 6, 0, 0 );
+			SwingConstants.SOUTH, FlatUIUtils.isChevron( arrowType ), 6, 1, 0, 0 );
 		FlatUIUtils.resetRenderingHints( g, oldRenderingHints );
 	}
 }

@@ -16,10 +16,12 @@
 
 package com.formdev.flatlaf.ui;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Insets;
@@ -28,11 +30,13 @@ import java.awt.Point;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeListener;
 import java.beans.PropertyVetoException;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JDesktopPane;
 import javax.swing.event.MouseInputAdapter;
 import javax.swing.event.MouseInputListener;
 import javax.swing.JLabel;
@@ -45,6 +49,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.basic.BasicDesktopIconUI;
+import com.formdev.flatlaf.util.MultiResolutionImageSupport;
 import com.formdev.flatlaf.util.UIScale;
 
 /**
@@ -75,9 +80,19 @@ public class FlatDesktopIconUI
 	private JToolTip titleTip;
 	private ActionListener closeListener;
 	private MouseInputListener mouseInputListener;
+	private PropertyChangeListener ancestorListener;
 
 	public static ComponentUI createUI( JComponent c ) {
 		return new FlatDesktopIconUI();
+	}
+
+	@Override
+	public void installUI( JComponent c ) {
+		super.installUI( c );
+
+		// update dock icon preview if already iconified
+		if( c.isDisplayable() )
+			updateDockIconPreviewLater();
 	}
 
 	@Override
@@ -136,6 +151,17 @@ public class FlatDesktopIconUI
 		};
 		closeButton.addActionListener( closeListener );
 		closeButton.addMouseListener( mouseInputListener );
+
+		ancestorListener = e -> {
+			if( e.getNewValue() != null ) {
+				// update dock icon preview if desktopIcon is added to desktop (internal frame was iconified)
+				updateDockIconPreviewLater();
+			} else {
+				// remove preview icon to release memory
+				dockIcon.setIcon( null );
+			}
+		};
+		desktopIcon.addPropertyChangeListener( "ancestor", ancestorListener );
 	}
 
 	@Override
@@ -146,6 +172,9 @@ public class FlatDesktopIconUI
 		closeButton.removeMouseListener( mouseInputListener );
 		closeListener = null;
 		mouseInputListener = null;
+
+		desktopIcon.removePropertyChangeListener( "ancestor", ancestorListener );
+		ancestorListener = null;
 	}
 
 	@Override
@@ -228,15 +257,30 @@ public class FlatDesktopIconUI
 		return getPreferredSize( c );
 	}
 
-	void updateDockIcon() {
+	@Override
+	public void update( Graphics g, JComponent c ) {
+		if( c.isOpaque() ) {
+			// fill background with color derived from desktop pane
+			Color background = c.getBackground();
+			JDesktopPane desktopPane = desktopIcon.getDesktopPane();
+			g.setColor( (desktopPane != null)
+				? FlatUIUtils.deriveColor( background, desktopPane.getBackground() )
+				: background );
+			g.fillRect( 0, 0, c.getWidth(), c.getHeight() );
+		}
+
+		paint( g, c );
+	}
+
+	private void updateDockIconPreviewLater() {
 		// use invoke later to make sure that components are updated when switching LaF
 		EventQueue.invokeLater( () -> {
 			if( dockIcon != null )
-				updateDockIconLater();
+				updateDockIconPreview();
 		} );
 	}
 
-	private void updateDockIconLater() {
+	protected void updateDockIconPreview() {
 		// make sure that frame is not selected
 		if( frame.isSelected() ) {
 			try {
@@ -246,13 +290,22 @@ public class FlatDesktopIconUI
 			}
 		}
 
+		// layout internal frame title pane, which was recreated when switching Laf
+		// (directly invoke doLayout() because frame.validate() does not work here
+		// because frame is not displayable)
+		if( !frame.isValid() )
+			frame.doLayout();
+		for( Component c : frame.getComponents() ) {
+			if( !c.isValid() )
+				c.doLayout();
+		}
+
 		// paint internal frame to buffered image
 		int frameWidth = Math.max( frame.getWidth(), 1 );
 		int frameHeight = Math.max( frame.getHeight(), 1 );
 		BufferedImage frameImage = new BufferedImage( frameWidth, frameHeight, BufferedImage.TYPE_INT_ARGB );
 		Graphics2D g = frameImage.createGraphics();
 		try {
-			//TODO fix missing internal frame header when switching LaF
 			frame.paint( g );
 		} finally {
 			g.dispose();
@@ -270,6 +323,27 @@ public class FlatDesktopIconUI
 
 		// scale preview
 		Image previewImage = frameImage.getScaledInstance( previewWidth, previewHeight, Image.SCALE_SMOOTH );
+		if( MultiResolutionImageSupport.isAvailable() ) {
+			// On HiDPI screens, create preview images for 1x, 2x and current scale factor.
+			// The icon then chooses the best resolution for painting, which is usually
+			// the one for the current scale factor. But if changing scale factor or
+			// moving window to another screen with different scale factor, then another
+			// resolution may be used because the preview icon is not updated.
+			Image previewImage2x = frameImage.getScaledInstance( previewWidth * 2, previewHeight * 2, Image.SCALE_SMOOTH );
+			double scaleFactor = UIScale.getSystemScaleFactor( desktopIcon.getGraphicsConfiguration() );
+			if( scaleFactor != 1 && scaleFactor != 2 ) {
+				Image previewImageCurrent = frameImage.getScaledInstance(
+					(int) Math.round( previewWidth * scaleFactor ),
+					(int) Math.round( previewHeight * scaleFactor ),
+					Image.SCALE_SMOOTH );
+
+				// the images must be ordered by resolution
+				previewImage = (scaleFactor < 2)
+					? MultiResolutionImageSupport.create( 0, previewImage, previewImageCurrent, previewImage2x )
+					: MultiResolutionImageSupport.create( 0, previewImage, previewImage2x, previewImageCurrent );
+			} else
+				previewImage = MultiResolutionImageSupport.create( 0, previewImage, previewImage2x );
+		}
 		dockIcon.setIcon( new ImageIcon( previewImage ) );
 	}
 

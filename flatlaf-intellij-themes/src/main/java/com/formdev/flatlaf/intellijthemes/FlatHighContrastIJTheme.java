@@ -29,11 +29,11 @@ import com.formdev.flatlaf.IntelliJTheme;
 public class FlatHighContrastIJTheme
 	extends IntelliJTheme.ThemeLaf
 {
-	public static final String NAME = "High contrast";
+	public static final String NAME = "High Contrast";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatHighContrastIJTheme() );
+			return setup( new FlatHighContrastIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

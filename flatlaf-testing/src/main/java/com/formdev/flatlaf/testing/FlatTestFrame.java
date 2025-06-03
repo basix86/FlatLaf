@@ -19,9 +19,14 @@ package com.formdev.flatlaf.testing;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.Properties;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -32,6 +37,7 @@ import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
+import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatIntelliJLaf;
@@ -46,6 +52,8 @@ import com.formdev.flatlaf.demo.intellijthemes.*;
 import com.formdev.flatlaf.extras.*;
 import com.formdev.flatlaf.extras.components.FlatTriStateCheckBox;
 import com.formdev.flatlaf.extras.components.FlatTriStateCheckBox.State;
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import com.formdev.flatlaf.ui.FlatUIUtils;
 import com.formdev.flatlaf.util.SystemInfo;
 import com.formdev.flatlaf.util.UIScale;
@@ -73,6 +81,7 @@ public class FlatTestFrame
 //		System.setProperty( "awt.useSystemAAFontSettings", "off" );
 
 		DemoPrefs.init( PREFS_ROOT_PATH );
+		DemoPrefs.initSystemScale();
 
 		// set scale factor
 		if( System.getProperty( FlatSystemProperties.UI_SCALE ) == null ) {
@@ -92,7 +101,7 @@ public class FlatTestFrame
 		FlatLaf.registerCustomDefaultsSource( "com.formdev.flatlaf.testing.customdefaults" );
 
 		// set look and feel
-		DemoPrefs.initLaf( args );
+		DemoPrefs.setupLaf( args );
 
 		// create frame
 		return new FlatTestFrame( title );
@@ -105,11 +114,13 @@ public class FlatTestFrame
 
 		// initialize look and feels combo box
 		DefaultComboBoxModel<LookAndFeelInfo> lafModel = new DefaultComboBoxModel<>();
-		lafModel.addElement( new LookAndFeelInfo( "Flat Light (F1)", FlatLightLaf.class.getName() ) );
-		lafModel.addElement( new LookAndFeelInfo( "Flat Dark (F2)", FlatDarkLaf.class.getName() ) );
-		lafModel.addElement( new LookAndFeelInfo( "Flat IntelliJ (F3)", FlatIntelliJLaf.class.getName() ) );
-		lafModel.addElement( new LookAndFeelInfo( "Flat Darcula (F4)", FlatDarculaLaf.class.getName() ) );
-		lafModel.addElement( new LookAndFeelInfo( "Flat Test (F8)", FlatTestLaf.class.getName() ) );
+		lafModel.addElement( new LookAndFeelInfo( "FlatLaf Light (F1)", FlatLightLaf.class.getName() ) );
+		lafModel.addElement( new LookAndFeelInfo( "FlatLaf Dark (F2)", FlatDarkLaf.class.getName() ) );
+		lafModel.addElement( new LookAndFeelInfo( "FlatLaf IntelliJ (F3)", FlatIntelliJLaf.class.getName() ) );
+		lafModel.addElement( new LookAndFeelInfo( "FlatLaf Darcula (F4)", FlatDarculaLaf.class.getName() ) );
+		lafModel.addElement( new LookAndFeelInfo( "FlatLaf macOS Light (F5)", FlatMacLightLaf.class.getName() ) );
+		lafModel.addElement( new LookAndFeelInfo( "FlatLaf macOS Dark (F6)", FlatMacDarkLaf.class.getName() ) );
+		lafModel.addElement( new LookAndFeelInfo( "FlatLaf Test (F8)", FlatTestLaf.class.getName() ) );
 
 		UIManager.LookAndFeelInfo[] lookAndFeels = UIManager.getInstalledLookAndFeels();
 		for( UIManager.LookAndFeelInfo lookAndFeel : lookAndFeels ) {
@@ -131,35 +142,7 @@ public class FlatTestFrame
 			lafModel.addElement( new LookAndFeelInfo( name, className ) );
 		}
 
-		String substanceLightClassName = "org.pushingpixels.substance.api.skin.SubstanceBusinessLookAndFeel";
-		if( SystemInfo.isJava_9_orLater && isClassAvailable( substanceLightClassName ) ) {
-			lafModel.addElement( new LookAndFeelInfo( "Substance Business (F5)", substanceLightClassName ) );
-			registerSwitchToLookAndFeel( "F5", substanceLightClassName );
-		}
-
-		String substanceDarkClassName = "org.pushingpixels.substance.api.skin.SubstanceGraphiteAquaLookAndFeel";
-		if( SystemInfo.isJava_9_orLater && isClassAvailable( substanceDarkClassName ) ) {
-			lafModel.addElement( new LookAndFeelInfo( "Substance Graphite Aqua (Ctrl+F5)", substanceDarkClassName ) );
-			registerSwitchToLookAndFeel( "ctrl F5", substanceDarkClassName );
-		}
-
-		String webLafClassName = "com.alee.laf.WebLookAndFeel";
-		if( isClassAvailable( webLafClassName ) ) {
-			lafModel.addElement( new LookAndFeelInfo( "WebLaf (Ctrl+F12)", webLafClassName ) );
-			registerSwitchToLookAndFeel( "ctrl F12", webLafClassName );
-		}
-
-		String looksPlasticClassName = "com.jgoodies.looks.plastic.PlasticLookAndFeel";
-		if( isClassAvailable( looksPlasticClassName ) ) {
-			lafModel.addElement( new LookAndFeelInfo( "JGoodies Looks Plastic (F6)", looksPlasticClassName ) );
-			registerSwitchToLookAndFeel( "F6", looksPlasticClassName );
-		}
-
-		String looksWindowsClassName = "com.jgoodies.looks.windows.WindowsLookAndFeel";
-		if( SystemInfo.isWindows && isClassAvailable( looksWindowsClassName ) ) {
-			lafModel.addElement( new LookAndFeelInfo( "JGoodies Looks Windows (F7)", looksWindowsClassName ) );
-			registerSwitchToLookAndFeel( "F7", looksWindowsClassName );
-		}
+		loadLafs( lafModel );
 
 		lookAndFeelComboBox.setModel( lafModel );
 
@@ -176,6 +159,8 @@ public class FlatTestFrame
 		registerSwitchToLookAndFeel( "F2", FlatDarkLaf.class.getName() );
 		registerSwitchToLookAndFeel( "F3", FlatIntelliJLaf.class.getName() );
 		registerSwitchToLookAndFeel( "F4", FlatDarculaLaf.class.getName() );
+		registerSwitchToLookAndFeel( "F5", FlatMacLightLaf.class.getName() );
+		registerSwitchToLookAndFeel( "F6", FlatMacDarkLaf.class.getName() );
 
 		registerSwitchToLookAndFeel( "F8", FlatTestLaf.class.getName() );
 
@@ -185,41 +170,26 @@ public class FlatTestFrame
 			registerSwitchToLookAndFeel( "F9", "com.apple.laf.AquaLookAndFeel" );
 		else if( SystemInfo.isLinux )
 			registerSwitchToLookAndFeel( "F9", "com.sun.java.swing.plaf.gtk.GTKLookAndFeel" );
-		registerSwitchToLookAndFeel( "F12", MetalLookAndFeel.class.getName() );
 		registerSwitchToLookAndFeel( "F11", NimbusLookAndFeel.class.getName() );
+		registerSwitchToLookAndFeel( "F12", MetalLookAndFeel.class.getName() );
+
+		// register Alt+Shift+F1, F2, ... keys to change system scale factor
+		DemoPrefs.registerSystemScaleFactors( this );
+
+		// register Alt+Shift+S to enable/disable interprocess Laf sync
+		DemoPrefs.initLafSync( this );
 
 		// register Ctrl+0, Ctrl++ and Ctrl+- to change font size
-		int menuShortcutKeyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-		((JComponent)getContentPane()).registerKeyboardAction(
-			e -> restoreFont(),
-			KeyStroke.getKeyStroke( KeyEvent.VK_0, menuShortcutKeyMask ),
-			JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT );
-		((JComponent)getContentPane()).registerKeyboardAction(
-			e -> incrFont(),
-			KeyStroke.getKeyStroke( KeyEvent.VK_PLUS, menuShortcutKeyMask ),
-			JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT );
-		((JComponent)getContentPane()).registerKeyboardAction(
-			e -> decrFont(),
-			KeyStroke.getKeyStroke( KeyEvent.VK_MINUS, menuShortcutKeyMask ),
-			JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT );
+		registerKey( SystemInfo.isMacOS ? "meta 0" : "ctrl 0", () -> restoreFont() );
+		registerKey( SystemInfo.isMacOS ? "meta PLUS" : "ctrl PLUS", () -> incrFont() );
+		registerKey( SystemInfo.isMacOS ? "meta MINUS" : "ctrl MINUS", () -> decrFont() );
 
 		// register Alt+UP and Alt+DOWN to switch to previous/next theme
-		((JComponent)getContentPane()).registerKeyboardAction(
-			e -> themesPanel.selectPreviousTheme(),
-			KeyStroke.getKeyStroke( KeyEvent.VK_UP, KeyEvent.ALT_DOWN_MASK ),
-			JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT );
-		((JComponent)getContentPane()).registerKeyboardAction(
-			e -> themesPanel.selectNextTheme(),
-			KeyStroke.getKeyStroke( KeyEvent.VK_DOWN, KeyEvent.ALT_DOWN_MASK ),
-			JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT );
+		registerKey( "alt UP", () -> themesPanel.selectPreviousTheme() );
+		registerKey( "alt DOWN", () -> themesPanel.selectNextTheme() );
 
 		// register ESC key to close frame
-		((JComponent)getContentPane()).registerKeyboardAction(
-			e -> {
-				dispose();
-			},
-			KeyStroke.getKeyStroke( KeyEvent.VK_ESCAPE, 0, false ),
-			JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT );
+		registerKey( "ESCAPE", () -> dispose() );
 
 		// make the "close" button the default button
 		getRootPane().setDefaultButton( closeButton );
@@ -290,17 +260,54 @@ public class FlatTestFrame
 			setTitle( newTitle );
 	}
 
-	private void registerSwitchToLookAndFeel( String keyStrokeStr, String lafClassName ) {
+	private void registerKey( String keyStrokeStr, Runnable runnable ) {
 		KeyStroke keyStroke = KeyStroke.getKeyStroke( keyStrokeStr );
 		if( keyStroke == null )
 			throw new IllegalArgumentException( "Invalid key stroke '" + keyStrokeStr + "'" );
 
 		((JComponent)getContentPane()).registerKeyboardAction(
 			e -> {
-				selectLookAndFeel( lafClassName );
+				runnable.run();
 			},
 			keyStroke,
 			JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT );
+	}
+
+	private void registerSwitchToLookAndFeel( String keyStrokeStr, String lafClassName ) {
+		registerKey( keyStrokeStr, () -> selectLookAndFeel( lafClassName ) );
+	}
+
+	private void loadLafs( DefaultComboBoxModel<LookAndFeelInfo> lafModel ) {
+		Properties properties = new Properties();
+		try( InputStream in = new FileInputStream( "lafs.properties" ) ) {
+			properties.load( in );
+		} catch( FileNotFoundException ex ) {
+			// ignore
+		} catch( IOException ex ) {
+			ex.printStackTrace();
+		}
+
+		ArrayList<LookAndFeelInfo> lafs = new ArrayList<>();
+		for( Map.Entry<Object, Object> entry : properties.entrySet() ) {
+			String lafClassName = (String) entry.getKey();
+			String[] parts = ((String)entry.getValue()).split( ";" );
+			String lafName = parts[0];
+			String keyStrokeStr = (parts.length >= 1) ? parts[1] : null;
+
+			if( !isClassAvailable( lafClassName ) )
+				continue;
+
+			if( keyStrokeStr != null ) {
+				registerSwitchToLookAndFeel( keyStrokeStr, lafClassName );
+				lafName += " (" + keyStrokeStr + ")";
+			}
+
+			lafs.add( new LookAndFeelInfo( lafName, lafClassName ) );
+		}
+
+		lafs.sort( (laf1, laf2) -> laf1.getName().compareToIgnoreCase( laf2.getName() ) );
+		for( LookAndFeelInfo laf : lafs )
+			lafModel.addElement( laf );
 	}
 
 	private boolean isClassAvailable( String className ) {
@@ -323,7 +330,8 @@ public class FlatTestFrame
 		if( menuBarFactory != null )
 			setJMenuBar( menuBarFactory.apply( content ) );
 
-		contentPanel.add( content );
+		addContentToContentPanel();
+
 		pack();
 		setLocationRelativeTo( null );
 		setVisible( true );
@@ -331,6 +339,27 @@ public class FlatTestFrame
 		EventQueue.invokeLater( () -> {
 			closeButton.requestFocusInWindow();
 		} );
+	}
+
+	private void addContentToContentPanel() {
+		if( content instanceof JScrollPane ) {
+			contentPanel.add( content );
+			return;
+		}
+
+		Dimension contentSize = content.getPreferredSize();
+		int buttonBarHeight = buttonBar.getPreferredSize().height;
+		Rectangle screenBounds = getGraphicsConfiguration().getBounds();
+
+		// add scroll pane if content is larger than screen
+		if( contentSize.width > screenBounds.width ||
+			contentSize.height + buttonBarHeight > screenBounds.height )
+		{
+			JScrollPane scrollPane = new JScrollPane( content );
+			scrollPane.setBorder( BorderFactory.createEmptyBorder() );
+			contentPanel.add( scrollPane );
+		} else
+			contentPanel.add( content );
 	}
 
 	private void selectLookAndFeel( String lafClassName ) {
@@ -446,7 +475,9 @@ public class FlatTestFrame
 			Color green = dark ? Color.green.darker() : Color.green;
 
 			updateComponentsRecur( content, (c, type) -> {
-				if( type == "view" || type == "tab" || c instanceof JSlider ) {
+				if( type == "view" || type == "tab" || c instanceof JSlider || c instanceof JInternalFrame ) {
+					if( c instanceof JInternalFrame )
+						c = ((JInternalFrame)c).getContentPane();
 					c.setForeground( explicit ? magenta : restoreColor );
 					c.setBackground( explicit ? orange : restoreColor );
 				} else {
@@ -548,7 +579,7 @@ public class FlatTestFrame
 		UIManager.put( "defaultFont", null );
 
 		LookAndFeel lookAndFeel = UIManager.getLookAndFeel();
-		IntelliJTheme theme = (lookAndFeel instanceof IntelliJTheme.ThemeLaf)
+		IntelliJTheme theme = (lookAndFeel.getClass() == IntelliJTheme.ThemeLaf.class)
 			? ((IntelliJTheme.ThemeLaf)lookAndFeel).getTheme()
 			: null;
 		String nameForProperties = null;
@@ -620,7 +651,10 @@ public class FlatTestFrame
 
 	public static void updateComponentsRecur( Container container, BiConsumer<Component, String> action ) {
 		for( Component c : container.getComponents() ) {
-			if( c instanceof JPanel || c instanceof JDesktopPane ) {
+			if( c instanceof JComponent && Boolean.TRUE.equals( ((JComponent)c).getClientProperty( "FlatLaf.internal.testing.ignore" ) ) )
+				continue;
+
+			if( c instanceof JPanel ) {
 				updateComponentsRecur( (Container) c, action );
 				continue;
 			}
@@ -631,6 +665,18 @@ public class FlatTestFrame
 				Component view = ((JScrollPane)c).getViewport().getView();
 				if( view != null )
 					action.accept( view, "view" );
+
+				JViewport columnHeader = ((JScrollPane)c).getColumnHeader();
+				if( columnHeader != null )
+					action.accept( columnHeader.getView(), "columnHeader" );
+			} else if( c instanceof JSplitPane ) {
+				JSplitPane splitPane = (JSplitPane) c;
+				Component left = splitPane.getLeftComponent();
+				Component right = splitPane.getRightComponent();
+				if( left instanceof Container )
+					updateComponentsRecur( (Container) left, action );
+				if( right instanceof Container )
+					updateComponentsRecur( (Container) right, action );
 			} else if( c instanceof JTabbedPane ) {
 				JTabbedPane tabPane = (JTabbedPane)c;
 				int tabCount = tabPane.getTabCount();
@@ -639,6 +685,9 @@ public class FlatTestFrame
 					if( tab != null )
 						action.accept( tab, "tab" );
 				}
+			} else if( c instanceof JDesktopPane ) {
+				for( JInternalFrame f : ((JDesktopPane)c).getAllFrames() )
+					action.accept( f, null );
 			}
 
 			if( c instanceof JToolBar )
@@ -660,9 +709,9 @@ public class FlatTestFrame
 	}
 
 	private void recreateContent() {
-		contentPanel.remove( content );
+		contentPanel.removeAll();
 		content = contentFactory.get();
-		contentPanel.add( content );
+		addContentToContentPanel();
 
 		if( rightToLeftCheckBox.isSelected() )
 			rightToLeftChanged();
@@ -761,7 +810,7 @@ public class FlatTestFrame
 				buttonBar.add(scaleFactorComboBox, "cell 1 0");
 
 				//---- fontSizeSpinner ----
-				fontSizeSpinner.putClientProperty("JComponent.minimumWidth", 50);
+				fontSizeSpinner.putClientProperty(FlatClientProperties.MINIMUM_WIDTH, 50);
 				fontSizeSpinner.setModel(new SpinnerNumberModel(0, 0, null, 1));
 				fontSizeSpinner.addChangeListener(e -> fontSizeChanged());
 				buttonBar.add(fontSizeSpinner, "cell 2 0");

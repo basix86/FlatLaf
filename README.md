@@ -6,14 +6,19 @@ Swing desktop applications.
 
 It looks almost flat (no shadows or gradients), clean, simple and elegant.
 FlatLaf comes with **Light**, **Dark**, **IntelliJ** and **Darcula** themes,
-scales on **HiDPI** displays and runs on Java 8 or newer.
+scales on **HiDPI** displays and runs on Java 8 or newer (LTS and latest).
 
 The look is heavily inspired by **Darcula** and **IntelliJ** themes from
 IntelliJ IDEA 2019.2+ and uses almost the same colors and icons.
 
-![Flat Light](images/flat_light.png)
+![FlatLaf Light](images/flat_light.png)
 
-![Flat Dark](images/flat_dark.png)
+![FlatLaf Dark](images/flat_dark.png)
+
+macOS Themes
+------------
+
+![FlatLaf macOS themes](images/flat_macos_themes.png)
 
 
 IntelliJ Platform Themes
@@ -24,6 +29,25 @@ FlatLaf can use 3rd party themes created for IntelliJ Platform (see
 
 ![IntelliJ Platform Themes](images/intellij_platform_themes.png)
 
+
+Sponsors
+--------
+
+### Current Sponsors
+
+<a href="https://exocharts.com/"><img src="https://www.formdev.com/flatlaf/sponsor/Exocharts.png" width="200" alt="Exocharts" title="Exocharts - Professional Grade OrderFlow"></a>
+
+<!-- [![None Sponsors](images/none-sponsors.png)](https://www.formdev.com/flatlaf/sponsor/) -->
+
+[Become a Sponsor](https://www.formdev.com/flatlaf/sponsor/)
+
+### Previous Sponsors
+
+<a href="https://www.ej-technologies.com/"><img src="https://www.formdev.com/flatlaf/sponsor/ej-technologies.png" width="200" alt="ej-technologies" title="ej-technologies - Java APM, Java Profiler, Java Installer Builder"></a>
+&nbsp; &nbsp; &nbsp; &nbsp;
+<a href="https://www.dbvis.com/"><img src="https://www.formdev.com/flatlaf/sponsor/dbvisualizer.svg" width="200" alt="DbVisualizer" title="DbVisualizer - SQL Client and Editor"></a>
+&nbsp; &nbsp; &nbsp; &nbsp;
+<a href="https://www.dscsag.com/"><img src="https://www.formdev.com/flatlaf/sponsor/DSC.png" height="48" alt="DSC Software AG" title="DSC Software AG - Your Companion for Integrative PLM"></a>
 
 Demo
 ----
@@ -46,18 +70,23 @@ build script:
     artifactId:  flatlaf
     version:     (see button below)
 
-Otherwise download `flatlaf-<version>.jar` here:
+Otherwise, download `flatlaf-<version>.jar` here:
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.formdev/flatlaf/badge.svg?style=flat-square&color=007ec6)](https://maven-badges.herokuapp.com/maven-central/com.formdev/flatlaf)
+
+See also
+[Native Libraries distribution](https://www.formdev.com/flatlaf/native-libraries/)
+for instructions on how to redistribute FlatLaf native libraries with your
+application.
 
 
 ### Snapshots
 
 FlatLaf snapshot binaries are available on
-[Sonatype OSSRH](https://oss.sonatype.org/content/repositories/snapshots/com/formdev/flatlaf/).
+[Sonatype Central](https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/com/formdev/flatlaf/).
 To access the latest snapshot, change the FlatLaf version in your dependencies
-to `<version>-SNAPSHOT` (e.g. `0.27-SNAPSHOT`) and add the repository
-`https://oss.sonatype.org/content/repositories/snapshots/` to your build (see
+to `<version>-SNAPSHOT` (e.g. `3.7-SNAPSHOT`) and add the repository
+`https://central.sonatype.com/repository/maven-snapshots/` to your build (see
 [Maven](https://maven.apache.org/guides/mini/guide-multiple-repositories.html)
 and
 [Gradle](https://docs.gradle.org/current/userguide/declaring_repositories.html#sec:declaring_custom_repository)
@@ -67,20 +96,25 @@ docs).
 Addons
 ------
 
-- [IntelliJ Themes Pack](flatlaf-intellij-themes)
-- [Extras](flatlaf-extras)
-- [SwingX](flatlaf-swingx)
-- [JIDE Common Layer](flatlaf-jide-oss)
+- [IntelliJ Themes Pack](flatlaf-intellij-themes) - bundles many popular
+  open-source 3rd party themes
+- [Extras](flatlaf-extras) - SVG icon, tri-state check box, UI inspectors, and
+  more
+- [SwingX](flatlaf-swingx) - support for SwingX components
+- [JIDE Common Layer](flatlaf-jide-oss) - support for JIDE Common Layer
+  components
+- [Fonts](flatlaf-fonts) - some font families bundled in easy-to-use and
+  redistributable JARs
 
 
 Getting started
 ---------------
 
-To enable FlatLaf, add following code to your main method before you create any
+To use FlatLaf, add following code to your main method before you create any
 Swing component:
 
 ~~~java
-FlatLightLaf.install();
+FlatLightLaf.setup();
 
 // create UI here...
 ~~~
@@ -96,14 +130,26 @@ For more information and documentation visit
 - [Customizing](https://www.formdev.com/flatlaf/customizing/)
 - [How to Customize](https://www.formdev.com/flatlaf/how-to-customize/)
 - [Properties Files](https://www.formdev.com/flatlaf/properties-files/)
+- [Components UI Properties](https://www.formdev.com/flatlaf/components/)
+- [Typography](https://www.formdev.com/flatlaf/typography/)
 - [Client Properties](https://www.formdev.com/flatlaf/client-properties/)
 - [System Properties](https://www.formdev.com/flatlaf/system-properties/)
+
+
+Theme Editor
+------------
+
+The Theme Editor that supports editing FlatLaf theme properties files. See
+[Theme Editor documentation](https://www.formdev.com/flatlaf/theme-editor/) for
+details and downloads.
+
+![Theme Editor](images/theme-editor@1.5x.png)
 
 
 Buzz
 ----
 
-- [What others say about FlatLaf on Twitter](https://twitter.com/search?f=live&q=flatlaf)
+- [FlatLaf 3.1 (and 3.0) announcement on Reddit](https://www.reddit.com/r/java/comments/12xgrsu/flatlaf_31_and_30_swing_look_and_feel/)
 - [FlatLaf 1.0 announcement on Reddit](https://www.reddit.com/r/java/comments/lsbcwe/flatlaf_10_swing_look_and_feel/)
 - [FlatLaf announcement on Reddit](https://www.reddit.com/r/java/comments/dl0hu3/flatlaf_flat_look_and_feel/)
 
@@ -111,89 +157,218 @@ Buzz
 Applications using FlatLaf
 --------------------------
 
-- [Apache NetBeans](https://netbeans.apache.org/) 11.3 - IDE for Java, PHP, HTML
-  and much more
-- [jclasslib bytecode viewer](https://github.com/ingokegel/jclasslib) 5.5
-- [KeyStore Explorer](https://keystore-explorer.org/) 5.4.3
-- ![New](images/new.svg)
+### Featured
+
+- ![Sponsor](images/sponsor.svg) [JFormDesigner](https://www.formdev.com/)
+  (**commercial**) - Java/Swing GUI Designer (from the FlatLaf creators)
+- ![Sponsor](images/sponsor.svg)
+  [JProfiler](https://www.ej-technologies.com/products/jprofiler/overview.html)
+  (**commercial**) - the award-winning all-in-one Java profiler
+- ![Sponsor](images/sponsor.svg)
   [install4j](https://www.ej-technologies.com/products/install4j/overview.html)
-  9.0 (**commercial**) - the powerful multi-platform Java installer builder
-- ![New](images/new.svg) [DbVisualizer](https://www.dbvis.com/) 12.0
+  (**commercial**) - the powerful multi-platform Java installer builder
+- ![Sponsor](images/sponsor.svg) [DbVisualizer](https://www.dbvis.com/)
   (**commercial**) - the universal database tool for developers, analysts and
   DBAs
-- ![New](images/new.svg) [MagicPlot](https://magicplot.com/) 3.0
-  (**commercial**) - Software for nonlinear fitting, plotting and data analysis
+- ![Hot](images/hot.svg) [Apache NetBeans](https://netbeans.apache.org/) - IDE
+  for Java, PHP, HTML and much more
+- ![Sponsor](images/sponsor.svg)
+  [Thermo-Calc](https://thermocalc.com/products/thermo-calc/) (**commercial**) -
+  Thermodynamics and Properties Software
+
+### Data
+
+- ![Hot](images/hot.svg) [Ultorg](https://www.ultorg.com/) (**commercial**) - a
+  visual query system for relational databases
+- [Jailer](https://github.com/Wisser/Jailer) - database subsetting and
+  relational data browsing tool
+- ![Hot](images/hot.svg) [MagicPlot](https://magicplot.com/) (**commercial**) -
+  Software for nonlinear fitting, plotting and data analysis
+- [Constellation](https://www.constellation-app.com/) - Data Visualization and
+  Analytics (based on NetBeans platform)
+- [Kafka Visualizer](https://github.com/kumait/kafkavisualizer) - Kafka GUI
+  client
 - ![New](images/new.svg)
-  [Thermo-Calc](https://thermocalc.com/products/thermo-calc/) 2021a
-  (**commercial**) - Thermodynamics and Properties Software
-- [OWASP ZAP](https://www.zaproxy.org/) 2.10 - the worlds most widely used web
-  app scanner
+  [RedisFront](https://github.com/dromara/RedisFront/blob/master/README_EN.md) -
+  Cross-platform redis GUI
 - ![New](images/new.svg)
+  [Zettelkasten](https://github.com/Zettelkasten-Team/Zettelkasten) - knowledge
+  management tool
+
+### Security
+
+- ![Hot](images/hot.svg) [ZAP](https://www.zaproxy.org/) - the world's most
+  widely used web app scanner
+- ![Hot](images/hot.svg)
   [Burp Suite Professional and Community Edition](https://portswigger.net/burp/pro)
-  2020.11.2 (**commercial**) - the leading software for web security testing
-- ![New](images/new.svg)
-  [BurpCustomizer](https://github.com/CoreyD97/BurpCustomizer) - adds more
+  (**commercial**) - the leading software for web security testing
+- [Ghidra](https://github.com/NationalSecurityAgency/ghidra) - a software
+  reverse engineering (SRE) framework
+- [jadx](https://github.com/skylot/jadx) - Dex to Java decompiler
+- [BurpCustomizer](https://github.com/CoreyD97/BurpCustomizer) - adds more
   FlatLaf themes to Burp Suite
-- [JOSM](https://josm.openstreetmap.de/) - an extensible editor for
-  [OpenStreetMap](https://www.openstreetmap.org/) (requires FlatLaf JOSM plugin)
-- [jAlbum](https://jalbum.net/) 21 (**commercial**) - creates photo album
-  websites
-- [XMLmind XML Editor](https://www.xmlmind.com/xmleditor/) 9.3 (**commercial**)
-- [Total Validator](https://www.totalvalidator.com/) 15 (**commercial**) -
-  checks your website
-- [j-lawyer](https://github.com/jlawyerorg/j-lawyer-org) - Kanzleisoftware
-- [MegaMek](https://github.com/MegaMek/megamek) v0.47.4 and
-  [MekHQ](https://github.com/MegaMek/mekhq) v0.47.5 - a turn-based sci-fi board
-  game
-- [GUIslice Builder](https://github.com/ImpulseAdventure/GUIslice-Builder)
-  0.13.b024 - GUI builder for
-  [GUIslice](https://github.com/ImpulseAdventure/GUIslice), a lightweight GUI
-  framework for embedded displays
-- [Rest Suite](https://github.com/supanadit/restsuite) - Rest API testing
-- [ControllerBuddy](https://github.com/bwRavencl/ControllerBuddy) - advanced
-  gamepad mapping software
-- [SpringRemote](https://github.com/HaleyWang/SpringRemote) - remote Linux SSH
-  connections manager
-- [jEnTunnel](https://github.com/ggrandes/jentunnel) - manage SSH Tunnels made
-  easy
+- [Total Validator](https://www.totalvalidator.com/) (**commercial**) - checks
+  your website
+- [JPass](https://github.com/gaborbata/jpass) - password manager with strong
+  encryption
+
+### Software Development
+
+- [jclasslib bytecode viewer](https://github.com/ingokegel/jclasslib)
+- [KeyStore Explorer](https://keystore-explorer.org/)
+- [muCommander](https://github.com/mucommander/mucommander) - lightweight
+  cross-platform file manager
+- [Guiffy](https://www.guiffy.com/) (**commercial**) - advanced cross-platform
+  Diff/Merge
+- [HashGarten](https://github.com/jonelo/HashGarten) - cross-platform Swing GUI
+  for Jacksum
+- [Pseudo Assembler IDE](https://github.com/tomasz-herman/PseudoAssemblerIDE) -
+  IDE for Pseudo-Assembler
+- [Linotte](https://github.com/cpc6128/LangageLinotte) - French programming
+  language created to learn programming
+- [lsfusion platform](https://github.com/lsfusion/platform) - information
+  systems development platform
+- ![New](images/new.svg) [Consulo](https://github.com/consulo/consulo) - open
+  source cross-platform multi-language IDE (Java, .NET, JS, etc)
+- [Convertigo](https://github.com/convertigo/convertigo) - low code & no code
+  mobile & web platform
+- ![New](images/new.svg) [EduMIPS64](https://github.com/EduMIPS64/edumips64) -
+  visual MIPS64 CPU simulator
+
+### Electrical
+
+- [Antares](https://www.antarescircuit.io/) - a free, powerful platform for
+  designing, simulating and explaining digital circuits
+- [Logisim-evolution](https://github.com/logisim-evolution/logisim-evolution) -
+  Digital logic design tool and simulator
+- ![New](images/new.svg) [OpenPnP](https://github.com/openpnp/openpnp) - SMT
+  Pick and Place Hardware and Software
+- ![New](images/new.svg)
+  [TrainControl](https://github.com/bob123456678/TrainControl) - control Marklin
+  / Trix / DCC digital model train layout
+- [Makelangelo Software](https://github.com/MarginallyClever/Makelangelo-software) -
+  for plotters, especially the wall-hanging polargraph
+- [GUIslice Builder](https://github.com/ImpulseAdventure/GUIslice-Builder) - GUI
+  builder for [GUIslice](https://github.com/ImpulseAdventure/GUIslice), a
+  lightweight GUI framework for embedded displays
+- [ThunderFocus](https://github.com/marcocipriani01/ThunderFocus) -
+  Arduino-based telescope focuser
+- [RemoteLight](https://github.com/Drumber/RemoteLight) - multifunctional LED
+  control software
+
+### Media
+
+- ![Hot](images/hot.svg) [jAlbum](https://jalbum.net/) (**commercial**) -
+  creates photo album websites
+- [MediathekView](https://mediathekview.de/) - search in media libraries of
+  various German broadcasters
+- ![New](images/new.svg) [Pixelitor](https://github.com/lbalazscs/Pixelitor) -
+  image editor
+- [Cinecred](https://loadingbyte.com/cinecred/) - create beautiful film credit
+  sequences
+- [tinyMediaManager](https://www.tinymediamanager.org/) (**commercial**) - a
+  media management tool
+- [Weasis](https://nroduit.github.io/) - medical DICOM viewer used in healthcare
+  by hospitals, health networks, etc
+- [Shutter Encoder](https://www.shutterencoder.com/)
+  ([source code](https://github.com/paulpacifico/shutter-encoder)) -
+  professional video converter and compression tool
+- [Sound Analysis](https://github.com/tomasz-herman/SoundAnalysis) - analyze
+  sound files in time or frequency domain
+- [Novel-Grabber](https://github.com/Flameish/Novel-Grabber) - download novels
+  from any webnovel and lightnovel site
+- [lectureStudio](https://www.lecturestudio.org/) - digitize your lectures with
+  ease
+
+### Modelling / Planning
+
+- ![New](images/new.svg) [Gephi](https://github.com/gephi/gephi) - the Open
+  Graph Viz Platform
+- [Astah](https://astah.net/) (**commercial**) - create UML, ER Diagram,
+  Flowchart, Data Flow Diagram, Requirement Diagram, SysML diagrams and more
+- [IGMAS+](https://www.gfz-potsdam.de/igmas) - Interactive Gravity and Magnetic
+  Application System
+- ![New](images/new.svg) [StarPlan](https://www.progotec.de/) (**commercial**) -
+  die Stundenplan Software für Bildungseinrichtungen
+
+### Documents
+
+- [Big Faceless (BFO) PDF Viewer](https://bfo.com/) (**commercial**) - Swing PDF
+  Viewer
+- [PDF Studio](https://www.qoppa.com/pdfstudio/) (**commercial**) - create,
+  review and edit PDF documents
+- [XMLmind XML Editor](https://www.xmlmind.com/xmleditor/) (**commercial**)
+
+### Geo
+
+- ![Hot](images/hot.svg) [JOSM](https://josm.openstreetmap.de/) - an extensible
+  editor for [OpenStreetMap](https://www.openstreetmap.org/) (requires FlatLaf
+  JOSM plugin)
+- [Mapton](https://mapton.org/)
+  ([source code](https://github.com/trixon/mapton)) - some kind of map
+  application (based on NetBeans platform)
+- [MeteoInfo](https://github.com/meteoinfo/MeteoInfo) - GIS and scientific
+  computation environment for meteorological community
+
+### Business / Legal
+
+- ![New](images/new.svg) ![Sponsor](images/sponsor.svg)
+  [Lisheane ERP](https://www.lisheane.ch/) (**commercial**) - backoffice
+  applikation
+- ![Sponsor](images/sponsor.svg)
+  [j-lawyer](https://github.com/jlawyerorg/j-lawyer-org) - Kanzleisoftware
+- ![Sponsor](images/sponsor.svg) [Jeyla Studio](https://www.jeylastudio.com/) -
+  Salon Software
+- [Fanurio](https://www.fanuriotimetracking.com/) (**commercial**) - time
+  tracking and billing for freelancers and teams
+- [Jes](https://www.jes-eur.de) - Die Java-EÜR
 - [mendelson AS2](https://sourceforge.net/projects/mec-as2/),
   [AS4](https://sourceforge.net/projects/mendelson-as4/) and
   [OFTP2](https://sourceforge.net/projects/mendelson-oftp2/) (open-source) and
   [mendelson AS2](https://mendelson-e-c.com/as2/),
   [AS4](https://mendelson-e-c.com/as4/) and
   [OFTP2](https://mendelson-e-c.com/oftp2) (**commercial**)
-- ![New](images/new.svg) [IGMAS+](https://www.gfz-potsdam.de/igmas) -
-  Interactive Gravity and Magnetic Application System
-- [MeteoInfo](https://github.com/meteoinfo/MeteoInfo) 2.2 - GIS and scientific
-  computation environment for meteorological community
-- [lsfusion platform](https://github.com/lsfusion/platform) 4 - information
-  systems development platform
-- [JPass](https://github.com/gaborbata/jpass) - password manager with strong
-  encryption
-- [Jes - Die Java-E�R](https://www.jes-eur.de)
-- [Mapton](https://mapton.org/) 2.0
-  ([source code](https://github.com/trixon/mapton)) - some kind of map
-  application (based on NetBeans platform)
-- [Pseudo Assembler IDE](https://github.com/tomasz-herman/PseudoAssemblerIDE) -
-  IDE for Pseudo-Assembler
-- [Linotte](https://github.com/cpc6128/LangageLinotte) 3.1 - French programming
-  language created to learn programming
-- [MEKA](https://github.com/Waikato/meka) 1.9.3 - multi-label classifiers and
-  evaluation procedures using the Weka machine learning framework
-- [Shutter Encoder](https://www.shutterencoder.com/) 14.2
-  ([source code](https://github.com/paulpacifico/shutter-encoder)) -
-  professional video converter and compression tool (screenshots show **old**
-  look)
-- [Sound Analysis](https://github.com/tomasz-herman/SoundAnalysis) - analyze
-  sound files in time or frequency domain
-- [RemoteLight](https://github.com/Drumber/RemoteLight) - multifunctional LED
-  control software
-- [ThunderFocus](https://github.com/marcocipriani01/ThunderFocus) -
-  Arduino-based telescope focuser
-- [Novel-Grabber](https://github.com/Flameish/Novel-Grabber) - download novels
-  from any webnovel and lightnovel site
-- [lectureStudio](https://www.lecturestudio.org/) 4.3.1060 - digitize your
-  lectures with ease
+
+### Messaging
+
+- [Spark](https://github.com/igniterealtime/Spark) - cross-platform IM client
+  optimized for businesses and organizations
+- [Chatty](https://github.com/chatty/chatty) - Twitch Chat Client
+
+### Gaming
+
+- ![Sponsor](images/sponsor.svg) [BGBlitz](https://www.bgblitz.com/)
+  (**commercial**) - professional Backgammon
+- ![New](images/new.svg) [josé](https://peteschaefer.github.io/jose/) - a
+  graphical chess tool
+- ![New](images/new.svg) [MCreator](https://github.com/MCreator/MCreator) - make
+  Minecraft Java Edition mods, Minecraft Bedrock Edition Add-Ons, and data packs
+- [MapTool](https://github.com/RPTools/maptool) - virtual Tabletop for playing
+  role-playing games
+- [MegaMek](https://github.com/MegaMek/megamek),
+  [MegaMekLab](https://github.com/MegaMek/megameklab) and
+  [MekHQ](https://github.com/MegaMek/mekhq) - a sci-fi tabletop BattleTech
+  simulator suite handling battles, unit building, and campaigns
+- [ControllerBuddy](https://github.com/bwRavencl/ControllerBuddy) - advanced
+  gamepad mapping software
+
+### Utilities
+
+- [MooInfo](https://github.com/rememberber/MooInfo) - visual implementation of
+  OSHI, to view information about the system and hardware
+- [Linux Task Manager (LTM)](https://github.com/ajee10x/LTM-LinuxTaskManager) -
+  GUI for monitoring and managing various aspects of a Linux system
+- [Rest Suite](https://github.com/supanadit/restsuite) - Rest API testing
+- [SpringRemote](https://github.com/HaleyWang/SpringRemote) - remote Linux SSH
+  connections manager
+- [jEnTunnel](https://github.com/ggrandes/jentunnel) - manage SSH Tunnels made
+  easy
 - [Android Tool](https://github.com/fast-geek/Android-Tool) - makes popular adb
   and fastboot commands easier to use
-- and more...
+- ![New](images/new.svg) [Termora](https://github.com/TermoraDev/termora) -
+  Terminal emulator and SSH client
+
+### Miscellaneous
+
+- [MEKA](https://github.com/Waikato/meka) - multi-label classifiers and
+  evaluation procedures using the Weka machine learning framework

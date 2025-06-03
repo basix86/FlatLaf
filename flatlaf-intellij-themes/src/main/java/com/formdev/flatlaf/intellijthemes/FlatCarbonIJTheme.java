@@ -31,9 +31,9 @@ public class FlatCarbonIJTheme
 {
 	public static final String NAME = "Carbon";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatCarbonIJTheme() );
+			return setup( new FlatCarbonIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

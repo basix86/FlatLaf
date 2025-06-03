@@ -31,9 +31,9 @@ public class FlatDraculaIJTheme
 {
 	public static final String NAME = "Dracula";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatDraculaIJTheme() );
+			return setup( new FlatDraculaIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

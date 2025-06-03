@@ -31,9 +31,9 @@ public class FlatNordIJTheme
 {
 	public static final String NAME = "Nord";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatNordIJTheme() );
+			return setup( new FlatNordIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

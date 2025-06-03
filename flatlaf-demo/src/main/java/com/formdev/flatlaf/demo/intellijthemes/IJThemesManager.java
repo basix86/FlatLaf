@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.formdev.flatlaf.json.Json;
+import com.formdev.flatlaf.util.LoggingFacade;
 import com.formdev.flatlaf.util.StringUtils;
 
 /**
@@ -46,7 +47,7 @@ class IJThemesManager
 	    try( Reader reader = new InputStreamReader( getClass().getResourceAsStream( "themes.json" ), StandardCharsets.UTF_8 ) ) {
 	    		json = (Map<String, Object>) Json.parse( reader );
 		} catch( IOException ex ) {
-			ex.printStackTrace();
+			LoggingFacade.INSTANCE.logSevere( null, ex );
 			return;
 		}
 
@@ -55,13 +56,17 @@ class IJThemesManager
 			String resourceName = e.getKey();
 			Map<String, String> value = (Map<String, String>) e.getValue();
 			String name = value.get( "name" );
+			boolean discontinued = Boolean.parseBoolean( value.get( "discontinued" ) );
 			boolean dark = Boolean.parseBoolean( value.get( "dark" ) );
+			String lafClassName = value.get( "lafClassName" );
 			String license = value.get( "license" );
 			String licenseFile = value.get( "licenseFile" );
+			String pluginUrl = value.get( "pluginUrl" );
 			String sourceCodeUrl = value.get( "sourceCodeUrl" );
 			String sourceCodePath = value.get( "sourceCodePath" );
 
-			bundledThemes.add( new IJThemeInfo( name, resourceName, dark, license, licenseFile, sourceCodeUrl, sourceCodePath, null, null ) );
+			bundledThemes.add( new IJThemeInfo( name, resourceName, discontinued, dark,
+				license, licenseFile, pluginUrl, sourceCodeUrl, sourceCodePath, null, lafClassName ) );
 		}
 	}
 
@@ -84,7 +89,7 @@ class IJThemesManager
 			String name = fname.endsWith( ".properties" )
 				? StringUtils.removeTrailing( fname, ".properties" )
 				: StringUtils.removeTrailing( fname, ".theme.json" );
-			moreThemes.add( new IJThemeInfo( name, null, false, null, null, null, null, f, null ) );
+			moreThemes.add( new IJThemeInfo( name, null, false, false, null, null, null, null, null, f, null ) );
 			lastModifiedMap.put( f, f.lastModified() );
 		}
 	}

@@ -20,6 +20,7 @@ import java.awt.*;
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.event.ChangeListener;
+import javax.swing.plaf.ColorUIResource;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.components.*;
 import com.formdev.flatlaf.extras.components.FlatButton.ButtonType;
@@ -59,6 +60,11 @@ public class FlatComponentsTest
 		};
 		for( JSlider slider : allSliders )
 			slider.addChangeListener( sliderChanged );
+
+		UIManager.addPropertyChangeListener( e -> {
+			if( "lookAndFeel".equals( e.getPropertyName() ) && hideArrowButtonCheckBox.isSelected() )
+				SwingUtilities.invokeLater( () -> hideArrowButton() );
+		} );
 	}
 
 	private void changeProgress() {
@@ -127,6 +133,48 @@ public class FlatComponentsTest
 		}
 	}
 
+	private void hideArrowButton() {
+		boolean hideArrowButton = hideArrowButtonCheckBox.isSelected();
+
+		for( Component c : getComponents() ) {
+			if( c instanceof JComboBox ) {
+				Component b = ((JComboBox<?>)c).getComponent( 0 );
+				if( b instanceof AbstractButton )
+					b.setVisible( !hideArrowButton );
+			}
+		}
+	}
+
+	private void transparentBackground() {
+		EventQueue.invokeLater( () -> {
+			boolean transparent = transparentBackgroundCheckBox.isSelected();
+			Color transparentColor = new Color( 0, true );
+			ColorUIResource restoreColor = new ColorUIResource( Color.white );
+
+			FlatTestFrame.updateComponentsRecur( this, (c, type) -> {
+				if( c instanceof JComboBox ) {
+					((JComboBox<?>)c).putClientProperty( FlatClientProperties.STYLE,
+						transparent ? "background: #0000; buttonBackground: #0000; buttonEditableBackground: #0000" : null );
+				} else if( c instanceof JSpinner ) {
+					((JSpinner)c).putClientProperty( FlatClientProperties.STYLE,
+						transparent ? "background: #0000; buttonBackground: #0000" : null );
+				} else if( c instanceof JComponent )
+					c.setBackground( transparent ? transparentColor : restoreColor );
+				else
+					return;
+
+				// if background color is transparent it is also required to make the component non-opaque
+				// DO NOT USE LookAndFeel.installProperty() in real-world applications
+				//            instead use c.setOpaque( false )
+				if( transparent )
+					LookAndFeel.installProperty( (JComponent) c, "opaque", false );
+			} );
+
+			if( !transparent )
+				SwingUtilities.updateComponentTreeUI( this );
+		} );
+	}
+
 	private void roundRectChanged() {
 		Boolean roundRect = roundRectCheckBox.isSelected() ? true : null;
 
@@ -162,7 +210,6 @@ public class FlatComponentsTest
 				((JComponent)c).putClientProperty( FlatClientProperties.OUTLINE, outline );
 		} );
 
-		repaint();
 		textField1.requestFocusInWindow();
 	}
 
@@ -253,6 +300,7 @@ public class FlatComponentsTest
 		JButton button16 = new JButton();
 		JButton button24 = new JButton();
 		JButton button20 = new JButton();
+		FlatButton button25 = new FlatButton();
 		JLabel toggleButtonLabel = new JLabel();
 		JToggleButton toggleButton1 = new JToggleButton();
 		FlatToggleButton toggleButton9 = new FlatToggleButton();
@@ -268,6 +316,7 @@ public class FlatComponentsTest
 		JToggleButton toggleButton14 = new JToggleButton();
 		JToggleButton toggleButton21 = new JToggleButton();
 		JToggleButton toggleButton18 = new JToggleButton();
+		FlatToggleButton toggleButton22 = new FlatToggleButton();
 		JLabel checkBoxLabel = new JLabel();
 		JCheckBox checkBox1 = new JCheckBox();
 		JCheckBox checkBox2 = new JCheckBox();
@@ -379,6 +428,8 @@ public class FlatComponentsTest
 		magentaOutlineRadioButton = new JRadioButton();
 		magentaCyanOutlineRadioButton = new JRadioButton();
 		focusPaintedCheckBox = new JCheckBox();
+		hideArrowButtonCheckBox = new JCheckBox();
+		transparentBackgroundCheckBox = new JCheckBox();
 		JLabel scrollBarLabel = new JLabel();
 		JScrollBar scrollBar1 = new JScrollBar();
 		JScrollBar scrollBar4 = new JScrollBar();
@@ -436,6 +487,14 @@ public class FlatComponentsTest
 		FlatButton button29 = new FlatButton();
 		FlatToggleButton toggleButton25 = new FlatToggleButton();
 		FlatToggleButton toggleButton26 = new FlatToggleButton();
+		JLabel label5 = new JLabel();
+		FlatComponentsTest.TestToolBar toolBar5 = new FlatComponentsTest.TestToolBar();
+		FlatToggleButton toggleButton27 = new FlatToggleButton();
+		FlatToggleButton toggleButton28 = new FlatToggleButton();
+		FlatToggleButton toggleButton29 = new FlatToggleButton();
+		FlatToggleButton toggleButton30 = new FlatToggleButton();
+		FlatToggleButton toggleButton31 = new FlatToggleButton();
+		FlatToggleButton toggleButton32 = new FlatToggleButton();
 
 		//======== this ========
 		setLayout(new MigLayout(
@@ -578,6 +637,11 @@ public class FlatComponentsTest
 		button20.setBorder(BorderFactory.createEmptyBorder());
 		add(button20, "cell 5 1 2 1");
 
+		//---- button25 ----
+		button25.setIcon(UIManager.getIcon("Tree.closedIcon"));
+		button25.setButtonType(FlatButton.ButtonType.borderless);
+		add(button25, "cell 5 1 2 1");
+
 		//---- toggleButtonLabel ----
 		toggleButtonLabel.setText("JToggleButton:");
 		add(toggleButtonLabel, "cell 0 2");
@@ -654,6 +718,12 @@ public class FlatComponentsTest
 		toggleButton18.setText("Empty border");
 		toggleButton18.setBorder(BorderFactory.createEmptyBorder());
 		add(toggleButton18, "cell 5 2 2 1");
+
+		//---- toggleButton22 ----
+		toggleButton22.setIcon(UIManager.getIcon("Tree.closedIcon"));
+		toggleButton22.setSelected(true);
+		toggleButton22.setButtonType(FlatButton.ButtonType.borderless);
+		add(toggleButton22, "cell 5 2 2 1");
 
 		//---- checkBoxLabel ----
 		checkBoxLabel.setText("JCheckBox");
@@ -1207,15 +1277,18 @@ public class FlatComponentsTest
 		//======== panel5 ========
 		{
 			panel5.setBorder(new TitledBorder("Control"));
+			panel5.putClientProperty("FlatLaf.internal.testing.ignore", true);
 			panel5.setLayout(new MigLayout(
 				"ltr,insets dialog,hidemode 3",
 				// columns
 				"[]" +
 				"[]",
 				// rows
-				"[]" +
-				"[]" +
-				"[]" +
+				"[]0" +
+				"[]0" +
+				"[]0" +
+				"[]0" +
+				"[]0" +
 				"[]"));
 
 			//---- buttonTypeComboBox ----
@@ -1269,13 +1342,23 @@ public class FlatComponentsTest
 				magentaCyanOutlineRadioButton.addActionListener(e -> outlineChanged());
 				panel4.add(magentaCyanOutlineRadioButton);
 			}
-			panel5.add(panel4, "cell 0 2 1 2");
+			panel5.add(panel4, "cell 0 2 1 4");
 
 			//---- focusPaintedCheckBox ----
 			focusPaintedCheckBox.setText("focusPainted");
 			focusPaintedCheckBox.setSelected(true);
 			focusPaintedCheckBox.addActionListener(e -> focusPaintedChanged());
 			panel5.add(focusPaintedCheckBox, "cell 1 2");
+
+			//---- hideArrowButtonCheckBox ----
+			hideArrowButtonCheckBox.setText("hide arrow button");
+			hideArrowButtonCheckBox.addActionListener(e -> hideArrowButton());
+			panel5.add(hideArrowButtonCheckBox, "cell 1 3");
+
+			//---- transparentBackgroundCheckBox ----
+			transparentBackgroundCheckBox.setText("transparent background");
+			transparentBackgroundCheckBox.addActionListener(e -> transparentBackground());
+			panel5.add(transparentBackgroundCheckBox, "cell 1 4");
 		}
 		add(panel5, "cell 5 13 2 10,grow");
 
@@ -1331,6 +1414,7 @@ public class FlatComponentsTest
 
 		//======== panel8 ========
 		{
+			panel8.putClientProperty("FlatLaf.internal.testing.ignore", true);
 			panel8.setLayout(new MigLayout(
 				"ltr,insets 0,hidemode 3",
 				// columns
@@ -1526,11 +1610,11 @@ public class FlatComponentsTest
 			toggleButton17.setSelected(true);
 			toolBar1.add(toggleButton17);
 		}
-		add(toolBar1, "cell 1 23 5 1");
+		add(toolBar1, "cell 1 23 6 1");
 
 		//---- label3 ----
 		label3.setText("Square:");
-		add(label3, "cell 1 23 5 1");
+		add(label3, "cell 1 23 6 1");
 
 		//======== toolBar3 ========
 		{
@@ -1557,11 +1641,11 @@ public class FlatComponentsTest
 			toggleButton24.setButtonType(FlatButton.ButtonType.square);
 			toolBar3.add(toggleButton24);
 		}
-		add(toolBar3, "cell 1 23 5 1");
+		add(toolBar3, "cell 1 23 6 1");
 
 		//---- label4 ----
 		label4.setText("Round:");
-		add(label4, "cell 1 23 5 1");
+		add(label4, "cell 1 23 6 1");
 
 		//======== toolBar4 ========
 		{
@@ -1588,7 +1672,45 @@ public class FlatComponentsTest
 			toggleButton26.setButtonType(FlatButton.ButtonType.roundRect);
 			toolBar4.add(toggleButton26);
 		}
-		add(toolBar4, "cell 1 23 5 1");
+		add(toolBar4, "cell 1 23 6 1");
+
+		//---- label5 ----
+		label5.setText("Group:");
+		add(label5, "cell 1 23 6 1");
+
+		//======== toolBar5 ========
+		{
+
+			//---- toggleButton27 ----
+			toggleButton27.setIcon(UIManager.getIcon("FileView.computerIcon"));
+			toggleButton27.setSelected(true);
+			toolBar5.add(toggleButton27);
+
+			//---- toggleButton28 ----
+			toggleButton28.setIcon(UIManager.getIcon("FileView.computerIcon"));
+			toolBar5.add(toggleButton28);
+			toolBar5.addSeparator();
+
+			//---- toggleButton29 ----
+			toggleButton29.setIcon(UIManager.getIcon("FileView.computerIcon"));
+			toolBar5.add(toggleButton29);
+			toolBar5.addSeparator();
+
+			//---- toggleButton30 ----
+			toggleButton30.setIcon(UIManager.getIcon("FileView.floppyDriveIcon"));
+			toggleButton30.setSelected(true);
+			toolBar5.add(toggleButton30);
+
+			//---- toggleButton31 ----
+			toggleButton31.setIcon(UIManager.getIcon("FileView.floppyDriveIcon"));
+			toolBar5.add(toggleButton31);
+			toolBar5.addSeparator();
+
+			//---- toggleButton32 ----
+			toggleButton32.setIcon(UIManager.getIcon("FileView.computerIcon"));
+			toolBar5.add(toggleButton32);
+		}
+		add(toolBar5, "cell 1 23 6 1");
 
 		//---- buttonGroup1 ----
 		ButtonGroup buttonGroup1 = new ButtonGroup();
@@ -1597,6 +1719,18 @@ public class FlatComponentsTest
 		buttonGroup1.add(warningOutlineRadioButton);
 		buttonGroup1.add(magentaOutlineRadioButton);
 		buttonGroup1.add(magentaCyanOutlineRadioButton);
+
+		//---- buttonGroup2 ----
+		ButtonGroup buttonGroup2 = new ButtonGroup();
+		buttonGroup2.add(toggleButton27);
+		buttonGroup2.add(toggleButton28);
+		buttonGroup2.add(toggleButton29);
+		buttonGroup2.add(toggleButton32);
+
+		//---- buttonGroup3 ----
+		ButtonGroup buttonGroup3 = new ButtonGroup();
+		buttonGroup3.add(toggleButton30);
+		buttonGroup3.add(toggleButton31);
 		// JFormDesigner - End of component initialization  //GEN-END:initComponents
 
 		// Unicode surrogate character pair "script capital A"
@@ -1608,6 +1742,11 @@ public class FlatComponentsTest
 //		customRenderer.setBorder( new LineBorder( Color.red ) );
 //		comboBox1.setRenderer( customRenderer );
 //		comboBox3.setRenderer( customRenderer );
+//		comboBox5.setRenderer( new DefaultListCellRenderer() );
+
+		// for testing issue #382
+//		spinner1.setModel( new SpinnerNumberModel( 0, null, 100, 1 ) );
+//		comboBox1.setEditor( new BasicComboBoxEditor() );
 	}
 
 	// JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
@@ -1626,6 +1765,8 @@ public class FlatComponentsTest
 	private JRadioButton magentaOutlineRadioButton;
 	private JRadioButton magentaCyanOutlineRadioButton;
 	private JCheckBox focusPaintedCheckBox;
+	private JCheckBox hideArrowButtonCheckBox;
+	private JCheckBox transparentBackgroundCheckBox;
 	private JSlider slider1;
 	private JSlider slider6;
 	private JCheckBox sliderPaintTrackCheckBox;

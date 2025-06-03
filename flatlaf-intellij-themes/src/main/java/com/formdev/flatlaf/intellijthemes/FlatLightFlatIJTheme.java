@@ -31,9 +31,9 @@ public class FlatLightFlatIJTheme
 {
 	public static final String NAME = "Light Flat";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatLightFlatIJTheme() );
+			return setup( new FlatLightFlatIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

@@ -5,9 +5,12 @@ build/
 .project
 .settings/
 .idea/
+.consulo/
 out/
 *.iml
 *.ipr
 *.iws
+*.xcuserstate
+*.xcworkspacedata
 .vs/
 .vscode/

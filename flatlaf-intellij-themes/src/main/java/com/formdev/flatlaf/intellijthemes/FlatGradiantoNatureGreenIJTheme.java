@@ -31,9 +31,9 @@ public class FlatGradiantoNatureGreenIJTheme
 {
 	public static final String NAME = "Gradianto Nature Green";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatGradiantoNatureGreenIJTheme() );
+			return setup( new FlatGradiantoNatureGreenIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

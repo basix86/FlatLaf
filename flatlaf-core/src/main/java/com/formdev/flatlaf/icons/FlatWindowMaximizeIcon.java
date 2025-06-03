@@ -18,6 +18,7 @@ package com.formdev.flatlaf.icons;
 
 import java.awt.Graphics2D;
 import com.formdev.flatlaf.ui.FlatUIUtils;
+import com.formdev.flatlaf.util.SystemInfo;
 
 /**
  * "maximize" icon for windows (frames and dialogs).
@@ -28,15 +29,25 @@ public class FlatWindowMaximizeIcon
 	extends FlatWindowAbstractIcon
 {
 	public FlatWindowMaximizeIcon() {
+		this( null );
+	}
+
+	/** @since 3.2 */
+	public FlatWindowMaximizeIcon( String windowStyle ) {
+		super( windowStyle );
 	}
 
 	@Override
 	protected void paintIconAt1x( Graphics2D g, int x, int y, int width, int height, double scaleFactor ) {
-		int iwh = (int) (10 * scaleFactor);
+		int iwh = (int) (symbolHeight * scaleFactor);
 		int ix = x + ((width - iwh) / 2);
 		int iy = y + ((height - iwh) / 2);
-		int thickness = (int) scaleFactor;
+		boolean isWindows10 = SystemInfo.isWindows_10_orLater && !SystemInfo.isWindows_11_orLater;
+		float thickness = Math.max( isWindows10 ? (int) scaleFactor : (float) scaleFactor, 1 );
+		int arc = Math.max( (int) (1.5 * scaleFactor), 2 );
 
-		g.fill( FlatUIUtils.createRectangle( ix, iy, iwh, iwh, thickness ) );
+		g.fill( SystemInfo.isWindows_11_orLater
+			? FlatUIUtils.createRoundRectangle( ix, iy, iwh, iwh, thickness, arc, arc, arc, arc )
+			: FlatUIUtils.createRectangle( ix, iy, iwh, iwh, thickness ) );
 	}
 }

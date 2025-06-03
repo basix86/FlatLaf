@@ -16,21 +16,19 @@
 
 plugins {
 	`java-library`
-}
-
-repositories {
-	maven {
-		// for using MigLayout snapshot
-		url = uri( "https://oss.sonatype.org/content/repositories/snapshots/" )
-	}
+	`flatlaf-toolchain`
 }
 
 dependencies {
 	implementation( project( ":flatlaf-core" ) )
 	implementation( project( ":flatlaf-extras" ) )
+	implementation( project( ":flatlaf-fonts-inter" ) )
+	implementation( project( ":flatlaf-fonts-jetbrains-mono" ) )
+	implementation( project( ":flatlaf-fonts-roboto" ) )
+	implementation( project( ":flatlaf-fonts-roboto-mono" ) )
 	implementation( project( ":flatlaf-intellij-themes" ) )
-	implementation( "com.miglayout:miglayout-swing:5.3-SNAPSHOT" )
-	implementation( "com.jgoodies:jgoodies-forms:1.9.0" )
+	implementation( libs.miglayout.swing )
+	implementation( libs.jgoodies.forms )
 //	implementation( project( ":flatlaf-natives-jna" ) )
 }
 
@@ -38,6 +36,10 @@ tasks {
 	jar {
 		dependsOn( ":flatlaf-core:jar" )
 		dependsOn( ":flatlaf-extras:jar" )
+		dependsOn( ":flatlaf-fonts-inter:jar" )
+		dependsOn( ":flatlaf-fonts-jetbrains-mono:jar" )
+		dependsOn( ":flatlaf-fonts-roboto:jar" )
+		dependsOn( ":flatlaf-fonts-roboto-mono:jar" )
 		dependsOn( ":flatlaf-intellij-themes:jar" )
 //		dependsOn( ":flatlaf-natives-jna:jar" )
 
@@ -46,6 +48,9 @@ tasks {
 
 			if( JavaVersion.current() >= JavaVersion.VERSION_1_9 )
 				attributes( "Multi-Release" to "true" )
+
+			// allow loading FlatLaf native library in Java 24+ (see https://openjdk.org/jeps/472)
+			attributes( "Enable-Native-Access" to "ALL-UNNAMED" )
 		}
 
 		exclude( "module-info.class" )

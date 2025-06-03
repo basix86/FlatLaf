@@ -23,6 +23,7 @@ import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Graphics;
+import java.awt.GraphicsConfiguration;
 import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
@@ -40,9 +41,11 @@ import java.util.function.Supplier;
 import javax.swing.DesktopManager;
 import javax.swing.JComponent;
 import javax.swing.JInternalFrame;
-import javax.swing.JLayeredPane;
+import javax.swing.JPanel;
 import javax.swing.JRootPane;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import com.formdev.flatlaf.util.SystemInfo;
 import com.formdev.flatlaf.util.UIScale;
 
 /**
@@ -56,8 +59,6 @@ import com.formdev.flatlaf.util.UIScale;
 public abstract class FlatWindowResizer
 	implements PropertyChangeListener, ComponentListener
 {
-	protected final static Integer WINDOW_RESIZER_LAYER = JLayeredPane.DRAG_LAYER + 1;
-
 	protected final JComponent resizeComp;
 
 	protected final int borderDragThickness = FlatUIUtils.getUIInt( "RootPane.borderDragThickness", 5 );
@@ -78,12 +79,12 @@ public abstract class FlatWindowResizer
 		leftDragComp = createDragBorderComponent( NW_RESIZE_CURSOR, W_RESIZE_CURSOR, SW_RESIZE_CURSOR );
 		rightDragComp = createDragBorderComponent( NE_RESIZE_CURSOR, E_RESIZE_CURSOR, SE_RESIZE_CURSOR );
 
-		Container cont = (resizeComp instanceof JRootPane) ? ((JRootPane)resizeComp).getLayeredPane() : resizeComp;
-		Object cons = (cont instanceof JLayeredPane) ? WINDOW_RESIZER_LAYER : null;
-		cont.add( topDragComp, cons, 0 );
-		cont.add( bottomDragComp, cons, 1 );
-		cont.add( leftDragComp, cons, 2 );
-		cont.add( rightDragComp, cons, 3 );
+		// for rootpanes, add after glasspane
+		int insertIndex = (resizeComp instanceof JRootPane) ? 1 : 0;
+		resizeComp.add( topDragComp,    insertIndex++ );
+		resizeComp.add( bottomDragComp, insertIndex++ );
+		resizeComp.add( leftDragComp,   insertIndex++ );
+		resizeComp.add( rightDragComp,  insertIndex++ );
 
 		resizeComp.addComponentListener( this );
 		resizeComp.addPropertyChangeListener( "ancestor", this );
@@ -102,11 +103,10 @@ public abstract class FlatWindowResizer
 		resizeComp.removeComponentListener( this );
 		resizeComp.removePropertyChangeListener( "ancestor", this );
 
-		Container cont = topDragComp.getParent();
-		cont.remove( topDragComp );
-		cont.remove( bottomDragComp );
-		cont.remove( leftDragComp );
-		cont.remove( rightDragComp );
+		resizeComp.remove( topDragComp );
+		resizeComp.remove( bottomDragComp );
+		resizeComp.remove( leftDragComp );
+		resizeComp.remove( rightDragComp );
 	}
 
 	public void doLayout() {
@@ -117,7 +117,7 @@ public abstract class FlatWindowResizer
 		int y = 0;
 		int width = resizeComp.getWidth();
 		int height = resizeComp.getHeight();
-		if( width == 0 || height == 0 )
+		if( width <= 0 || height <= 0 )
 			return;
 
 		Insets resizeInsets = getResizeInsets();
@@ -181,10 +181,14 @@ public abstract class FlatWindowResizer
 	protected abstract boolean isWindowResizable();
 	protected abstract Rectangle getWindowBounds();
 	protected abstract void setWindowBounds( Rectangle r );
+	protected abstract boolean limitToParentBounds();
+	protected abstract Rectangle getParentBounds();
 	protected abstract boolean honorMinimumSizeOnResize();
+	protected abstract boolean honorMaximumSizeOnResize();
 	protected abstract Dimension getWindowMinimumSize();
+	protected abstract Dimension getWindowMaximumSize();
 
-	protected void beginResizing( int direction ) {}
+	protected void beginResizing( int resizeDir, MouseEvent e ) {}
 	protected void endResizing() {}
 
 	//---- interface PropertyChangeListener ----
@@ -227,8 +231,43 @@ public abstract class FlatWindowResizer
 	{
 		protected Window window;
 
+		private final JComponent centerComp;
+		private final boolean limitResizeToScreenBounds;
+
 		public WindowResizer( JRootPane rootPane ) {
 			super( rootPane );
+
+			// Transparent "center" component that is made visible only while resizing window.
+			// It uses same cursor as the area where resize dragging started.
+			// This ensures that the cursor shape stays stable while dragging mouse
+			// into the window to make window smaller. Otherwise it would toggling between
+			// resize and standard cursor because the component layout is not updated
+			// fast enough and the mouse cursor is always updated from the component
+			// at the mouse location.
+			centerComp = new JPanel();
+			centerComp.setOpaque( false );
+			centerComp.setVisible( false );
+			rootPane.add( centerComp, 5 );
+
+			// On Linux, limit window resizing to screen bounds because otherwise
+			// there would be a strange effect when the mouse is moved over a sidebar
+			// while resizing and the opposite window side is also resized.
+			limitResizeToScreenBounds = SystemInfo.isLinux;
+		}
+
+		@Override
+		public void uninstall() {
+			resizeComp.remove( centerComp );
+
+			super.uninstall();
+		}
+
+		@Override
+		public void doLayout() {
+			super.doLayout();
+
+			if( centerComp != null && centerComp.isVisible() )
+				centerComp.setBounds( 0, 0, resizeComp.getWidth(), resizeComp.getHeight() );
 		}
 
 		@Override
@@ -284,6 +323,21 @@ public abstract class FlatWindowResizer
 		}
 
 		@Override
+		protected boolean limitToParentBounds() {
+			return limitResizeToScreenBounds && window != null && window.getGraphicsConfiguration() != null;
+		}
+
+		@Override
+		protected Rectangle getParentBounds() {
+			GraphicsConfiguration gc = window.getGraphicsConfiguration();
+			Rectangle bounds = gc.getBounds();
+			Insets insets = FlatUIUtils.getScreenInsets( gc );
+			return new Rectangle( bounds.x + insets.left, bounds.y + insets.top,
+				bounds.width - insets.left - insets.right,
+				bounds.height - insets.top - insets.bottom );
+		}
+
+		@Override
 		protected boolean honorMinimumSizeOnResize() {
 			return
 				(honorFrameMinimumSizeOnResize && window instanceof Frame) ||
@@ -291,8 +345,18 @@ public abstract class FlatWindowResizer
 		}
 
 		@Override
+		protected boolean honorMaximumSizeOnResize() {
+			return false;
+		}
+
+		@Override
 		protected Dimension getWindowMinimumSize() {
 			return window.getMinimumSize();
+		}
+
+		@Override
+		protected Dimension getWindowMaximumSize() {
+			return window.getMaximumSize();
 		}
 
 		@Override
@@ -303,6 +367,37 @@ public abstract class FlatWindowResizer
 		@Override
 		public void windowStateChanged( WindowEvent e ) {
 			updateVisibility();
+		}
+
+		@Override
+		protected void beginResizing( int resizeDir, MouseEvent e ) {
+			// on Linux, resize window using window manager
+			if( SystemInfo.isLinux && window != null && FlatNativeLinuxLibrary.isWMUtilsSupported( window ) ) {
+				int direction = -1;
+				switch( resizeDir ) {
+					case N_RESIZE_CURSOR:	direction = FlatNativeLinuxLibrary.SIZE_TOP; break;
+					case S_RESIZE_CURSOR:	direction = FlatNativeLinuxLibrary.SIZE_BOTTOM; break;
+					case W_RESIZE_CURSOR:	direction = FlatNativeLinuxLibrary.SIZE_LEFT; break;
+					case E_RESIZE_CURSOR:	direction = FlatNativeLinuxLibrary.SIZE_RIGHT; break;
+					case NW_RESIZE_CURSOR:	direction = FlatNativeLinuxLibrary.SIZE_TOPLEFT; break;
+					case NE_RESIZE_CURSOR:	direction = FlatNativeLinuxLibrary.SIZE_TOPRIGHT; break;
+					case SW_RESIZE_CURSOR:	direction = FlatNativeLinuxLibrary.SIZE_BOTTOMLEFT; break;
+					case SE_RESIZE_CURSOR:	direction = FlatNativeLinuxLibrary.SIZE_BOTTOMRIGHT; break;
+				}
+
+				if( direction >= 0 && FlatNativeLinuxLibrary.moveOrResizeWindow( window, e, direction ) )
+					return;
+			}
+
+			centerComp.setBounds( 0, 0, resizeComp.getWidth(), resizeComp.getHeight() );
+			centerComp.setCursor( getPredefinedCursor( resizeDir ) );
+			centerComp.setVisible( true );
+		}
+
+		@Override
+		protected void endResizing() {
+			centerComp.setVisible( false );
+			centerComp.setCursor( null );
 		}
 	}
 
@@ -355,7 +450,22 @@ public abstract class FlatWindowResizer
 		}
 
 		@Override
+		protected boolean limitToParentBounds() {
+			return true;
+		}
+
+		@Override
+		protected Rectangle getParentBounds() {
+			return new Rectangle( getFrame().getParent().getSize() );
+		}
+
+		@Override
 		protected boolean honorMinimumSizeOnResize() {
+			return true;
+		}
+
+		@Override
+		protected boolean honorMaximumSizeOnResize() {
 			return true;
 		}
 
@@ -365,7 +475,23 @@ public abstract class FlatWindowResizer
 		}
 
 		@Override
-		protected void beginResizing( int direction ) {
+		protected Dimension getWindowMaximumSize() {
+			return getFrame().getMaximumSize();
+		}
+
+		@Override
+		protected void beginResizing( int resizeDir, MouseEvent e ) {
+			int direction = 0;
+			switch( resizeDir ) {
+				case N_RESIZE_CURSOR:	direction = NORTH; break;
+				case S_RESIZE_CURSOR:	direction = SOUTH; break;
+				case W_RESIZE_CURSOR:	direction = WEST; break;
+				case E_RESIZE_CURSOR:	direction = EAST; break;
+				case NW_RESIZE_CURSOR:	direction = NORTH_WEST; break;
+				case NE_RESIZE_CURSOR:	direction = NORTH_EAST; break;
+				case SW_RESIZE_CURSOR:	direction = SOUTH_WEST; break;
+				case SE_RESIZE_CURSOR:	direction = SOUTH_EAST; break;
+			}
 			desktopManager.get().beginResizingFrame( getFrame(), direction );
 		}
 
@@ -460,7 +586,7 @@ debug*/
 
 		@Override
 		public void mousePressed( MouseEvent e ) {
-			if( !isWindowResizable() )
+			if( !SwingUtilities.isLeftMouseButton( e ) || !isWindowResizable() )
 				return;
 
 			int xOnScreen = e.getXOnScreen();
@@ -473,23 +599,12 @@ debug*/
 			dragRightOffset = windowBounds.x + windowBounds.width - xOnScreen;
 			dragBottomOffset = windowBounds.y + windowBounds.height - yOnScreen;
 
-			int direction = 0;
-			switch( resizeDir ) {
-				case N_RESIZE_CURSOR:	direction = NORTH; break;
-				case S_RESIZE_CURSOR:	direction = SOUTH; break;
-				case W_RESIZE_CURSOR:	direction = WEST; break;
-				case E_RESIZE_CURSOR:	direction = EAST; break;
-				case NW_RESIZE_CURSOR:	direction = NORTH_WEST; break;
-				case NE_RESIZE_CURSOR:	direction = NORTH_EAST; break;
-				case SW_RESIZE_CURSOR:	direction = SOUTH_WEST; break;
-				case SE_RESIZE_CURSOR:	direction = SOUTH_EAST; break;
-			}
-			beginResizing( direction );
+			beginResizing( resizeDir, e );
 		}
 
 		@Override
 		public void mouseReleased( MouseEvent e ) {
-			if( !isWindowResizable() )
+			if( !SwingUtilities.isLeftMouseButton( e ) || !isWindowResizable() )
 				return;
 
 			dragLeftOffset = dragRightOffset = dragTopOffset = dragBottomOffset = 0;
@@ -515,13 +630,13 @@ debug*/
 
 		@Override
 		public void mouseDragged( MouseEvent e ) {
-			if( !isWindowResizable() )
+			if( !SwingUtilities.isLeftMouseButton( e ) || !isWindowResizable() )
 				return;
 
 			int xOnScreen = e.getXOnScreen();
 			int yOnScreen = e.getYOnScreen();
 
-			// Get current window bounds and compute new bounds based them.
+			// Get current window bounds and compute new bounds based on them.
 			// This is necessary because window manager may alter window bounds while resizing.
 			// E.g. when having two monitors with different scale factors and resizing
 			// a window on first screen to the second screen, then the window manager may
@@ -535,41 +650,74 @@ debug*/
 			// top
 			if( resizeDir == N_RESIZE_CURSOR || resizeDir == NW_RESIZE_CURSOR || resizeDir == NE_RESIZE_CURSOR ) {
 				newBounds.y = yOnScreen - dragTopOffset;
+				if( limitToParentBounds() )
+					newBounds.y = Math.max( newBounds.y, getParentBounds().y );
 				newBounds.height += (oldBounds.y - newBounds.y);
 			}
 
 			// bottom
-			if( resizeDir == S_RESIZE_CURSOR || resizeDir == SW_RESIZE_CURSOR || resizeDir == SE_RESIZE_CURSOR )
+			if( resizeDir == S_RESIZE_CURSOR || resizeDir == SW_RESIZE_CURSOR || resizeDir == SE_RESIZE_CURSOR ) {
 				newBounds.height = (yOnScreen + dragBottomOffset) - newBounds.y;
+				if( limitToParentBounds() ) {
+					Rectangle parentBounds = getParentBounds();
+					int parentBottomY = parentBounds.y + parentBounds.height;
+					if( newBounds.y + newBounds.height > parentBottomY )
+						newBounds.height = parentBottomY - newBounds.y;
+				}
+			}
 
 			// left
 			if( resizeDir == W_RESIZE_CURSOR || resizeDir == NW_RESIZE_CURSOR || resizeDir == SW_RESIZE_CURSOR ) {
 				newBounds.x = xOnScreen - dragLeftOffset;
+				if( limitToParentBounds() )
+					newBounds.x = Math.max( newBounds.x, getParentBounds().x );
 				newBounds.width += (oldBounds.x - newBounds.x);
 			}
 
 			// right
-			if( resizeDir == E_RESIZE_CURSOR || resizeDir == NE_RESIZE_CURSOR || resizeDir == SE_RESIZE_CURSOR )
+			if( resizeDir == E_RESIZE_CURSOR || resizeDir == NE_RESIZE_CURSOR || resizeDir == SE_RESIZE_CURSOR ) {
 				newBounds.width = (xOnScreen + dragRightOffset) - newBounds.x;
+				if( limitToParentBounds() ) {
+					Rectangle parentBounds = getParentBounds();
+					int parentRightX = parentBounds.x + parentBounds.width;
+					if( newBounds.x + newBounds.width > parentRightX )
+						newBounds.width = parentRightX - newBounds.x;
+				}
+			}
 
 			// apply minimum window size
 			Dimension minimumSize = honorMinimumSizeOnResize() ? getWindowMinimumSize() : null;
 			if( minimumSize == null )
 				minimumSize = UIScale.scale( new Dimension( 150, 50 ) );
-			if( newBounds.width < minimumSize.width ) {
-				if( newBounds.x != oldBounds.x )
-					newBounds.x -= (minimumSize.width - newBounds.width);
-				newBounds.width = minimumSize.width;
-			}
-			if( newBounds.height < minimumSize.height ) {
-				if( newBounds.y != oldBounds.y )
-					newBounds.y -= (minimumSize.height - newBounds.height);
-				newBounds.height = minimumSize.height;
+			if( newBounds.width < minimumSize.width )
+				changeWidth( oldBounds, newBounds, minimumSize.width );
+			if( newBounds.height < minimumSize.height )
+				changeHeight( oldBounds, newBounds, minimumSize.height );
+
+			// apply maximum window size
+			if( honorMaximumSizeOnResize() ) {
+				Dimension maximumSize = getWindowMaximumSize();
+				if( newBounds.width > maximumSize.width )
+					changeWidth( oldBounds, newBounds, maximumSize.width );
+				if( newBounds.height > maximumSize.height )
+					changeHeight( oldBounds, newBounds, maximumSize.height );
 			}
 
 			// set window bounds
 			if( !newBounds.equals( oldBounds ) )
 				setWindowBounds( newBounds );
+		}
+
+		private void changeWidth( Rectangle oldBounds, Rectangle newBounds, int width ) {
+			if( newBounds.x != oldBounds.x )
+				newBounds.x -= (width - newBounds.width);
+			newBounds.width = width;
+		}
+
+		private void changeHeight( Rectangle oldBounds, Rectangle newBounds, int height ) {
+			if( newBounds.y != oldBounds.y )
+				newBounds.y -= (height - newBounds.height);
+			newBounds.height = height;
 		}
 	}
 }

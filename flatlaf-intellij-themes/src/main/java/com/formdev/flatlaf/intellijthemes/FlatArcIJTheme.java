@@ -31,9 +31,9 @@ public class FlatArcIJTheme
 {
 	public static final String NAME = "Arc";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatArcIJTheme() );
+			return setup( new FlatArcIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

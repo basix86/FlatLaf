@@ -89,6 +89,15 @@ public class FlatInternalFrameTest
 		};
 		internalFrame.setContentPane( panel );
 
+		if( minSizeCheckBox.isSelected() ) {
+			internalFrame.setMinimumSize( new Dimension( 300, 150 ) );
+			panel.add( new JLabel( "min 300,150" ) );
+		}
+		if( maxSizeCheckBox.isSelected() ) {
+			internalFrame.setMaximumSize( new Dimension( 400, 200 ) );
+			panel.add( new JLabel( "max 400,200" ) );
+		}
+
 		if( !palette.getComponentOrientation().isLeftToRight() )
 			internalFrame.setComponentOrientation( ComponentOrientation.RIGHT_TO_LEFT );
 
@@ -107,6 +116,12 @@ public class FlatInternalFrameTest
 		frameCount++;
 	}
 
+	private void customDesktopManagerChanged() {
+		desktopPane.setDesktopManager( customDesktopManagerCheckBox.isSelected()
+			? new CustomDesktopManager()
+			: null );
+	}
+
 	private void initComponents() {
 		// JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
 		desktopPane = new JDesktopPane();
@@ -117,9 +132,13 @@ public class FlatInternalFrameTest
 		maximizableCheckBox = new JCheckBox();
 		iconCheckBox = new FlatTriStateCheckBox();
 		menuBarCheckBox = new JCheckBox();
+		minSizeCheckBox = new JCheckBox();
+		maxSizeCheckBox = new JCheckBox();
 		titleLabel = new JLabel();
 		titleField = new JTextField();
 		createFrameButton = new JButton();
+		panel1 = new JPanel();
+		customDesktopManagerCheckBox = new JCheckBox();
 
 		//======== this ========
 		setLayout(new MigLayout(
@@ -127,7 +146,8 @@ public class FlatInternalFrameTest
 			// columns
 			"[grow,fill]",
 			// rows
-			"[grow,fill]"));
+			"[grow,fill]" +
+			"[]"));
 
 		//======== desktopPane ========
 		{
@@ -147,6 +167,8 @@ public class FlatInternalFrameTest
 					"[fill]",
 					// rows
 					"[fill]0" +
+					"[]0" +
+					"[]0" +
 					"[]0" +
 					"[]0" +
 					"[]unrel" +
@@ -180,20 +202,44 @@ public class FlatInternalFrameTest
 				menuBarCheckBox.setText("Menu Bar");
 				paletteContentPane.add(menuBarCheckBox, "cell 1 2");
 
+				//---- minSizeCheckBox ----
+				minSizeCheckBox.setText("Minimum size 300,150");
+				paletteContentPane.add(minSizeCheckBox, "cell 0 3 2 1,alignx left,growx 0");
+
+				//---- maxSizeCheckBox ----
+				maxSizeCheckBox.setText("Maximum size 400,200");
+				paletteContentPane.add(maxSizeCheckBox, "cell 0 4 2 1,alignx left,growx 0");
+
 				//---- titleLabel ----
 				titleLabel.setText("Frame title:");
-				paletteContentPane.add(titleLabel, "cell 0 3");
-				paletteContentPane.add(titleField, "cell 1 3");
+				paletteContentPane.add(titleLabel, "cell 0 5");
+				paletteContentPane.add(titleField, "cell 1 5");
 
 				//---- createFrameButton ----
 				createFrameButton.setText("Create Frame");
 				createFrameButton.addActionListener(e -> createInternalFrame());
-				paletteContentPane.add(createFrameButton, "cell 1 4,alignx right,growx 0");
+				paletteContentPane.add(createFrameButton, "cell 1 6,alignx right,growx 0");
 			}
 			desktopPane.add(palette, JLayeredPane.PALETTE_LAYER);
-			palette.setBounds(15, 25, 275, 185);
+			palette.setBounds(15, 25, 275, 275);
 		}
 		add(desktopPane, "cell 0 0,width 600,height 600");
+
+		//======== panel1 ========
+		{
+			panel1.setLayout(new MigLayout(
+				"insets 0,hidemode 3",
+				// columns
+				"[fill]",
+				// rows
+				"[]"));
+
+			//---- customDesktopManagerCheckBox ----
+			customDesktopManagerCheckBox.setText("custom desktop manager");
+			customDesktopManagerCheckBox.addActionListener(e -> customDesktopManagerChanged());
+			panel1.add(customDesktopManagerCheckBox, "cell 0 0");
+		}
+		add(panel1, "cell 0 1");
 		// JFormDesigner - End of component initialization  //GEN-END:initComponents
 
 		if( UIScale.getUserScaleFactor() > 1 )
@@ -209,8 +255,42 @@ public class FlatInternalFrameTest
 	private JCheckBox maximizableCheckBox;
 	private FlatTriStateCheckBox iconCheckBox;
 	private JCheckBox menuBarCheckBox;
+	private JCheckBox minSizeCheckBox;
+	private JCheckBox maxSizeCheckBox;
 	private JLabel titleLabel;
 	private JTextField titleField;
 	private JButton createFrameButton;
+	private JPanel panel1;
+	private JCheckBox customDesktopManagerCheckBox;
 	// JFormDesigner - End of variables declaration  //GEN-END:variables
+
+	//---- class CustomDesktopManager -----------------------------------------
+
+	private static class CustomDesktopManager
+		extends DefaultDesktopManager
+	{
+		@Override
+		public void activateFrame( JInternalFrame f ) {
+			System.out.println( "activateFrame: " + f.getTitle() );
+			super.activateFrame( f );
+		}
+
+		@Override
+		public void deactivateFrame( JInternalFrame f ) {
+			System.out.println( "deactivateFrame: " + f.getTitle() );
+			super.deactivateFrame( f );
+		}
+
+		@Override
+		public void iconifyFrame( JInternalFrame f ) {
+			System.out.println( "iconifyFrame: " + f.getTitle() );
+			super.iconifyFrame( f );
+		}
+
+		@Override
+		public void deiconifyFrame( JInternalFrame f ) {
+			System.out.println( "deiconifyFrame: " + f.getTitle() );
+			super.deiconifyFrame( f );
+		}
+	}
 }

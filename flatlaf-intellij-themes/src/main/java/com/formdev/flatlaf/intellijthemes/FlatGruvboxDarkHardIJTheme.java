@@ -31,9 +31,9 @@ public class FlatGruvboxDarkHardIJTheme
 {
 	public static final String NAME = "Gruvbox Dark Hard";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatGruvboxDarkHardIJTheme() );
+			return setup( new FlatGruvboxDarkHardIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

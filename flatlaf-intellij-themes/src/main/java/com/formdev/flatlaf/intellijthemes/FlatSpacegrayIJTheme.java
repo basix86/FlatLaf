@@ -31,9 +31,9 @@ public class FlatSpacegrayIJTheme
 {
 	public static final String NAME = "Spacegray";
 
-	public static boolean install() {
+	public static boolean setup() {
 		try {
-			return install( new FlatSpacegrayIJTheme() );
+			return setup( new FlatSpacegrayIJTheme() );
 		} catch( RuntimeException ex ) {
 			return false;
 		}

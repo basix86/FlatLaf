@@ -16,11 +16,16 @@
 
 package com.formdev.flatlaf.ui;
 
-import javax.swing.DefaultDesktopManager;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ContainerEvent;
+import java.awt.event.ContainerListener;
 import javax.swing.JComponent;
-import javax.swing.JInternalFrame;
+import javax.swing.JInternalFrame.JDesktopIcon;
 import javax.swing.plaf.ComponentUI;
-import javax.swing.plaf.UIResource;
 import javax.swing.plaf.basic.BasicDesktopPaneUI;
 
 /**
@@ -36,30 +41,96 @@ import javax.swing.plaf.basic.BasicDesktopPaneUI;
 public class FlatDesktopPaneUI
 	extends BasicDesktopPaneUI
 {
+	private LayoutDockListener layoutDockListener;
+	private boolean layoutDockPending;
+
 	public static ComponentUI createUI( JComponent c ) {
 		return new FlatDesktopPaneUI();
 	}
 
 	@Override
-	protected void installDesktopManager() {
-		desktopManager = desktop.getDesktopManager();
-		if( desktopManager == null ) {
-			desktopManager = new FlatDesktopManager();
-			desktop.setDesktopManager( desktopManager );
+	public void installUI( JComponent c ) {
+		super.installUI( c );
+
+		layoutDockLaterOnce();
+	}
+
+	@Override
+	protected void installListeners() {
+		super.installListeners();
+
+		layoutDockListener = new LayoutDockListener();
+		desktop.addContainerListener( layoutDockListener );
+		desktop.addComponentListener( layoutDockListener );
+	}
+
+	@Override
+	protected void uninstallListeners() {
+		super.uninstallListeners();
+
+		desktop.removeContainerListener( layoutDockListener );
+		desktop.removeComponentListener( layoutDockListener );
+		layoutDockListener = null;
+	}
+
+	private void layoutDockLaterOnce() {
+		if( layoutDockPending )
+			return;
+		layoutDockPending = true;
+
+		EventQueue.invokeLater( () -> {
+			layoutDockPending = false;
+			if( desktop != null )
+				layoutDock();
+		} );
+	}
+
+	protected void layoutDock() {
+		Dimension desktopSize = desktop.getSize();
+		int x = 0;
+		int y = desktopSize.height;
+		int rowHeight = 0;
+
+		for( Component c : desktop.getComponents() ) {
+			if( !(c instanceof JDesktopIcon) )
+				continue;
+
+			JDesktopIcon icon = (JDesktopIcon) c;
+			Dimension iconSize = icon.getPreferredSize();
+
+			if( x + iconSize.width > desktopSize.width ) {
+				// new row
+				x = 0;
+				y -= rowHeight;
+				rowHeight = 0;
+			}
+
+			icon.setLocation( x, y - iconSize.height );
+
+			x += iconSize.width;
+			rowHeight = Math.max( iconSize.height, rowHeight );
 		}
 	}
 
-	//---- class FlatDesktopManager -------------------------------------------
+	//---- class LayoutDockListener -------------------------------------------
 
-	private class FlatDesktopManager
-		extends DefaultDesktopManager
-		implements UIResource
+	private class LayoutDockListener
+		extends ComponentAdapter
+		implements ContainerListener
 	{
 		@Override
-		public void iconifyFrame( JInternalFrame f ) {
-			super.iconifyFrame( f );
+		public void componentAdded( ContainerEvent e ) {
+			layoutDockLaterOnce();
+		}
 
-			((FlatDesktopIconUI)f.getDesktopIcon().getUI()).updateDockIcon();
+		@Override
+		public void componentRemoved( ContainerEvent e ) {
+			layoutDockLaterOnce();
+		}
+
+		@Override
+		public void componentResized( ComponentEvent e ) {
+			layoutDockLaterOnce();
 		}
 	}
 }

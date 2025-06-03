@@ -24,6 +24,9 @@ import javax.swing.table.*;
 import net.miginfocom.swing.*;
 import org.jdesktop.swingx.*;
 import org.jdesktop.swingx.table.DatePickerCellEditor;
+import org.jdesktop.swingx.tips.DefaultTip;
+import org.jdesktop.swingx.tips.DefaultTipOfTheDayModel;
+import org.jdesktop.swingx.tips.TipOfTheDayModel.Tip;
 import com.formdev.flatlaf.testing.FlatTestFrame;
 import com.formdev.flatlaf.testing.FlatTestPanel;
 
@@ -62,12 +65,28 @@ public class FlatSwingXTest
 		monthView1.setUnselectableDates( calendar.getTime() );
 
 		table.setDefaultEditor( Date.class, new DatePickerCellEditor() );
+
+		// status bar
+		statusBar1.add( new JLabel( "Ready" ), new JXStatusBar.Constraint( 100 ) );
+		statusBar1.add( new JLabel( "0 files loaded" ), new JXStatusBar.Constraint( 100 ) );
+		JProgressBar statusProgressBar = new JProgressBar();
+		statusProgressBar.setValue( 50 );
+		statusBar1.add( statusProgressBar, new JXStatusBar.Constraint( JXStatusBar.Constraint.ResizeBehavior.FILL ) );
+
+		xTipOfTheDay1.setModel( new DefaultTipOfTheDayModel( new Tip[] {
+			new DefaultTip( "testTip", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua." )
+		} ) );
 	}
 
 	private void busyChanged() {
 		boolean busy = busyCheckBox.isSelected();
 		xBusyLabel1.setBusy( busy );
 		xBusyLabel2.setBusy( busy );
+	}
+
+	private void showTipOfTheDayDialog() {
+		JXTipOfTheDay tipOfTheDay = new JXTipOfTheDay( xTipOfTheDay1.getModel() );
+		tipOfTheDay.showDialog( this );
 	}
 
 	private void initComponents() {
@@ -124,6 +143,16 @@ public class FlatSwingXTest
 		JTextField textField3 = new JTextField();
 		JLabel label10 = new JLabel();
 		JTextField textField4 = new JTextField();
+		JLabel label11 = new JLabel();
+		JXSearchField xSearchField1 = new JXSearchField();
+		JXSearchField xSearchField2 = new JXSearchField();
+		JXSearchField xSearchField3 = new JXSearchField();
+		JXSearchField xSearchField4 = new JXSearchField();
+		JLabel label12 = new JLabel();
+		statusBar1 = new JXStatusBar();
+		JLabel label13 = new JLabel();
+		xTipOfTheDay1 = new JXTipOfTheDay();
+		JButton showTipOfTheDayDialogButton = new JButton();
 		JButton button1 = new JButton();
 		JButton button2 = new JButton();
 
@@ -146,6 +175,10 @@ public class FlatSwingXTest
 			"[]" +
 			"[]" +
 			"[]" +
+			"[]" +
+			"[]" +
+			"[]" +
+			"[top]" +
 			"[37]"));
 
 		//---- label1 ----
@@ -337,14 +370,14 @@ public class FlatSwingXTest
 			//---- table ----
 			table.setModel(new DefaultTableModel(
 				new Object[][] {
-					{new Date(1574636400000L) /* 25.11.2019, 00:00:00 */},
-					{new Date(1517439600000L) /* 01.02.2018, 00:00:00 */},
+					{new Date(1574636400000L) /* 2019-11-25 */},
+					{new Date(1517439600000L) /* 2018-02-01 */},
 				},
 				new String[] {
 					"Date"
 				}
 			) {
-				Class<?>[] columnTypes = new Class<?>[] {
+				Class<?>[] columnTypes = {
 					Date.class
 				};
 				@Override
@@ -425,6 +458,45 @@ public class FlatSwingXTest
 		}
 		add(xTitledPanel2, "cell 3 8,grow");
 
+		//---- label11 ----
+		label11.setText("JXSearchField:");
+		add(label11, "cell 0 9");
+
+		//---- xSearchField1 ----
+		xSearchField1.setText("abc");
+		add(xSearchField1, "cell 1 9,growx");
+
+		//---- xSearchField2 ----
+		xSearchField2.setEnabled(false);
+		xSearchField2.setText("abc");
+		add(xSearchField2, "cell 2 9,growx");
+
+		//---- xSearchField3 ----
+		xSearchField3.setRecentSearchesSaveKey("flatlaf.swingx.search.recent");
+		xSearchField3.setText("abc");
+		add(xSearchField3, "cell 1 10,growx");
+
+		//---- xSearchField4 ----
+		xSearchField4.setRecentSearchesSaveKey("flatlaf.swingx.search.recent");
+		xSearchField4.setEnabled(false);
+		xSearchField4.setText("abc");
+		add(xSearchField4, "cell 2 10,growx");
+
+		//---- label12 ----
+		label12.setText("JXStatusBar:");
+		add(label12, "cell 0 11");
+		add(statusBar1, "cell 1 11 3 1,grow");
+
+		//---- label13 ----
+		label13.setText("JXTipOfTheDay:");
+		add(label13, "cell 0 12");
+		add(xTipOfTheDay1, "cell 1 12 3 1");
+
+		//---- showTipOfTheDayDialogButton ----
+		showTipOfTheDayDialogButton.setText("Show Dialog...");
+		showTipOfTheDayDialogButton.addActionListener(e -> showTipOfTheDayDialog());
+		add(showTipOfTheDayDialogButton, "cell 1 12 3 1");
+
 		//---- button1 ----
 		button1.setText("<");
 
@@ -445,5 +517,7 @@ public class FlatSwingXTest
 	private JXBusyLabel xBusyLabel2;
 	private JCheckBox busyCheckBox;
 	private JTable table;
+	private JXStatusBar statusBar1;
+	private JXTipOfTheDay xTipOfTheDay1;
 	// JFormDesigner - End of variables declaration  //GEN-END:variables
 }
